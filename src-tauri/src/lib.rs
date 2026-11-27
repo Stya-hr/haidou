@@ -191,6 +191,23 @@ fn ocr_scan_now(state: S) {
     ocr::arm(&state);
 }
 
+/// 自己的悬浮窗口不进入截屏（Windows 10 2004+）：否则 OCR 会读到悬浮条上的强化名，
+/// 卡片关掉后悬浮条也不会消失。录屏 / 截图软件同样看不到这些窗口。
+fn exclude_from_capture(w: &tauri::WebviewWindow) {
+    #[cfg(windows)]
+    {
+        use windows::Win32::Foundation::HWND;
+        use windows::Win32::UI::WindowsAndMessaging::{SetWindowDisplayAffinity, WDA_EXCLUDEFROMCAPTURE};
+        if let Ok(h) = w.hwnd() {
+            if let Err(e) = unsafe { SetWindowDisplayAffinity(HWND(h.0), WDA_EXCLUDEFROMCAPTURE) } {
+                log::warn!("排除截屏失败（系统低于 Windows 10 2004？）：{e}");
+            }
+        }
+    }
+    #[cfg(not(windows))]
+    let _ = w;
+}
+
 fn register_hotkey(app: &AppHandle, key: &str) {
     let gs = app.global_shortcut();
     let _ = gs.unregister_all();
@@ -244,12 +261,13 @@ pub fn run() {
             // 显示悬浮层时（ocr::position_overlay）还会再设置一次
             #[cfg(windows)]
             let _ = overlay.set_ignore_cursor_events(true);
+            exclude_from_capture(&overlay);
             #[cfg(not(windows))]
             let _ = overlay;
             // 悬浮窗：选人 / 对局时显示的横条小窗，可拖动，不进任务栏
-            WebviewWindowBuilder::new(app, float::LABEL, WebviewUrl::default())
+            let float_win = WebviewWindowBuilder::new(app, float::LABEL, WebviewUrl::default())
                 .title("HexPilot")
-                .inner_size(700.0, 132.0)
+                .inner_size(600.0, 60.0)
                 .transparent(true)
                 .decorations(false)
                 .always_on_top(true)
@@ -260,6 +278,7 @@ pub fn run() {
                 .resizable(false)
                 .data_directory(paths::data_dir(app.handle()).join("webview"))
                 .build()?;
+            exclude_from_capture(&float_win);
             register_hotkey(app.handle(), &s.ocr_hotkey);
             *state.settings.write().unwrap() = s;
             app.manage(state.clone());

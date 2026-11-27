@@ -585,8 +585,8 @@ function SettingsView(p: { snap: Snapshot; cat: Catalog | null; notify: (m: stri
         {check("overlayEnabled", "s_overlay")}
         <label>{t("s_overlay_y")}
           <div class="slider">
-            <input type="range" min="0.45" max="0.92" step="0.005" value={s()!.overlayTop}
-              onInput={(e) => patch("overlayTop", Number(e.currentTarget.value), true)} />
+            <input type="range" min="0.10" max="0.60" step="0.005" value={s()!.overlayBottom}
+              onInput={(e) => patch("overlayBottom", Number(e.currentTarget.value), true)} />
             <button class="small" title={t("s_overlay_test_tip")}
               onClick={async () => { await persist(); api.overlayTest().catch((e) => p.notify(String(e))); }}>{t("s_overlay_test")}</button>
           </div>

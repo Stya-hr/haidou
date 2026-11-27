@@ -53,71 +53,44 @@ export default function Float() {
 
   return (
     <Show when={cs()}>
-      <div class="fl-panel">
-        <div class="fl-bar" data-tauri-drag-region>
-          <img src="/icon.png" alt="" data-tauri-drag-region />
-          <span class="fl-brand" data-tauri-drag-region>HexPilot</span>
-          <Show when={msg()} fallback={<span class="fl-src" data-tauri-drag-region>{cat()?.stats?.attribution?.label}</span>}>
-            <span class="fl-msg">{msg()}</span>
-          </Show>
-          <button class="fl-x" title={t("fl_close")} onClick={() => api.floatDismiss()}>×</button>
-        </div>
-
-        <div class="fl-body">
-          {/* 我的英雄 */}
-          <div class="fl-me">
-            <img class="fl-avatar" src={champ(me())?.icon} alt="" />
-            <div class="fl-meta">
-              <div class="fl-name">{champ(me())?.name ?? t("not_selected")}</div>
-              <div class="fl-sub">
-                <Show when={stat(me())}>
-                  <span class={`tier t${tierRank(stat(me())!.tier)}`}>{stat(me())!.tier}</span>
-                  <span class="stat">{t("win_rate")} <b>{pct(stat(me())!.winRate)}</b></span>
-                </Show>
-              </div>
-            </div>
+      {/* 一行布局、无标题栏：整条背景可拖动，右侧一个小 × */}
+      <div class="fl-panel" data-tauri-drag-region>
+        <img class="fl-avatar" src={champ(me())?.icon} alt="" title={champ(me())?.name} data-tauri-drag-region />
+        <Show when={stat(me())}>
+          <div class="fl-me" data-tauri-drag-region>
+            <span class={`tier t${tierRank(stat(me())!.tier)}`}>{stat(me())!.tier}</span>
+            <span class="stat">{pct(stat(me())!.winRate)}</span>
           </div>
+        </Show>
 
-          {/* 板凳 */}
-          <Show when={cs()!.benchEnabled && bench().length}>
-            <div class="fl-sep" />
-            <div class="fl-bench">
-              <For each={bench()}>
-                {(id) => (
-                  <button class="fl-benchbtn" classList={{ best: id === best() }} title={`${champ(id)?.name ?? ""} · ${t("fl_swap_tip")}`} onClick={() => swap(id)}>
-                    <img src={champ(id)?.icon} alt="" />
-                    <Show when={stat(id)}><span class={`tier mini t${tierRank(stat(id)!.tier)}`}>{stat(id)!.tier}</span></Show>
-                  </button>
-                )}
-              </For>
-            </div>
-          </Show>
+        <Show when={cs()!.benchEnabled && bench().length}>
+          <div class="fl-sep" />
+          <div class="fl-bench">
+            <For each={bench()}>
+              {(id) => (
+                <button class="fl-benchbtn" classList={{ best: id === best() }} title={`${champ(id)?.name ?? ""} · ${t("fl_swap_tip")}`} onClick={() => swap(id)}>
+                  <img src={champ(id)?.icon} alt="" />
+                  <Show when={stat(id)}><span class={`tier mini t${tierRank(stat(id)!.tier)}`}>{stat(id)!.tier}</span></Show>
+                </button>
+              )}
+            </For>
+          </div>
+        </Show>
 
-          {/* 出装与技能 */}
-          <Show when={arch() || stat(me())?.spells.length}>
-            <div class="fl-sep" />
-            <div class="fl-build">
-              <Show when={arch()}>
-                <div class="fl-archname">
-                  <span class={`tier mini t${tierRank(arch()!.tier)}`}>{arch()!.tier}</span>
-                  <span>{localName(arch()!)}</span>
-                  <span class="stat">{pct(arch()!.winRate)}</span>
-                </div>
-                <div class="fl-items">
-                  <For each={[...arch()!.core, ...arch()!.options].slice(0, 6)}>
-                    {(id) => <img src={item(id)?.icon} title={item(id)?.name} alt="" />}
-                  </For>
-                </div>
-              </Show>
-            </div>
-            <div class="fl-actions">
-              <div class="fl-spells">
-                <For each={stat(me())?.spells ?? []}>{(id) => <img src={spell(id)?.icon} title={spell(id)?.name} alt="" />}</For>
-              </div>
-              <Show when={arch()}><button class="fl-import" onClick={importItems}>{t("fl_import")}</button></Show>
-            </div>
-          </Show>
+        <Show when={arch()}>
+          <div class="fl-sep" />
+          <div class="fl-items" title={`${localName(arch()!)} · ${t("win_rate")} ${pct(arch()!.winRate)}`}>
+            <For each={[...arch()!.core, ...arch()!.options].slice(0, 6)}>
+              {(id) => <img src={item(id)?.icon} title={item(id)?.name} alt="" />}
+            </For>
+          </div>
+        </Show>
+        <div class="fl-spells">
+          <For each={stat(me())?.spells ?? []}>{(id) => <img src={spell(id)?.icon} title={spell(id)?.name} alt="" />}</For>
         </div>
+        <Show when={arch()}><button class="fl-import" onClick={importItems} title={t("import_items_tip")}>{t("fl_import")}</button></Show>
+        <Show when={msg()}><span class="fl-msg">{msg()}</span></Show>
+        <button class="fl-x" title={t("fl_close")} onClick={() => api.floatDismiss()}>×</button>
       </div>
     </Show>
   );

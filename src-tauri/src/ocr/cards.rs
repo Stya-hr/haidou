@@ -21,8 +21,8 @@ const RIM_HITS: usize = 7;
 /// 两张就够：提示框或翻牌动画可能挡住第三张
 const CARDS_NEEDED: usize = 2;
 
-/// 卡片下沿大约在游戏高度的这个比例处（悬浮条默认放在这里）
-pub const CARD_BOTTOM: f32 = 0.645;
+/// 卡片上沿大约在游戏高度的这个比例处（下沿约 0.645，其下是重随按钮）
+pub const CARD_TOP: f32 = 0.265;
 
 /// 卡身颜色：很暗的青色；画面淡入时是它的变暗版本
 fn is_card_body(r: i32, g: i32, b: i32) -> bool {

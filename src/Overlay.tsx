@@ -60,49 +60,55 @@ export default function Overlay() {
     return list.map((c) => ({ ...c, best: top > 0 && tierRank(c.tier) === top }));
   });
 
-  /** 格宽：按卡片间距算，限制在 150–300px（1080p 下与卡片同宽）*/
-  const cellW = () => {
-    const xs = cards().map((c) => c.x);
-    const gap = xs.length > 1 ? (xs[xs.length - 1] - xs[0]) / (xs.length - 1) : 0.18;
-    return Math.max(150, Math.min(300, gap * vw() * 0.85));
-  };
-  /** 悬浮条顶部：默认紧贴卡片下沿（真实版式约在游戏高度 66%），可在设置中调整 */
-  const top = () => Math.min(0.92, settings()?.overlayTop ?? 0.66);
-  const span = () => {
-    const xs = cards().map((c) => c.x * vw());
-    return { left: Math.min(...xs) - cellW() / 2 - 10, right: Math.max(...xs) + cellW() / 2 + 10 };
-  };
-  const champInfo = () => cat()?.champions.find((c) => c.id === champ());
+  const [vh, setVh] = createSignal(window.innerHeight);
+  onMount(() => {
+    const f = () => setVh(window.innerHeight);
+    window.addEventListener("resize", f);
+    onCleanup(() => window.removeEventListener("resize", f));
+  });
+
+  /**
+   * 真实版式（1080p 基准）：三张卡水平居中，中心间距 368、卡宽约 310，上沿约在画面高度 26.5%。
+   * 窗口与游戏画面同尺寸，所以直接按窗口宽高换算。
+   */
+  const unit = () => vh() / 1080;
+  const slotX = (k: number) => vw() / 2 + k * 368 * unit();
+  const cellW = () => Math.max(150, 300 * unit());
+  /** 每个识别结果吸附到最近的卡位，标题只认出半行或只认出两张也不会错位 */
+  const slotted = createMemo(() => {
+    const used = new Set<number>();
+    return cards().map((c) => {
+      const order = [-1, 0, 1].sort((a, b) => Math.abs(slotX(a) - c.x * vw()) - Math.abs(slotX(b) - c.x * vw()));
+      const k = order.find((s) => !used.has(s)) ?? order[0];
+      used.add(k);
+      return { ...c, left: slotX(k) - cellW() / 2 };
+    });
+  });
+  /** 悬浮条下沿：默认紧贴卡片上沿（卡片下方是重随按钮，不能挡） */
+  const bottom = () => Math.max(0.08, Math.min(0.95, settings()?.overlayBottom ?? 0.253));
+  const span = () => ({ left: slotX(-1) - cellW() / 2 - 10, right: slotX(1) + cellW() / 2 + 10 });
+
+  /** 标签下沿距卡片上沿 6px；设置里可整体上下移动 */
+  const anchorBottom = () => `calc(${(1 - bottom()) * 100}% + 6px)`;
 
   return (
     <Show when={cards().length}>
-      <div class="ov-panel" style={{ left: `${span().left}px`, width: `${span().right - span().left}px`, top: `${top() * 100}%` }}>
-        <div class="ov-head">
-          <Show when={champInfo()}><img src={champInfo()!.icon} alt="" /><b>{champInfo()!.name}</b></Show>
-          <Show when={snap()?.liveLevel}><span>Lv.{snap()!.liveLevel}</span></Show>
-          <Show when={test()}><span class="ov-tag">{t("ov_sample")}</span></Show>
-          <span class="ov-src">{cat()?.stats?.attribution?.label}</span>
-        </div>
-        <div class="ov-cells">
-          <For each={cards()}>
-            {(c) => (
-              <div class={`ov-cell ${RAR[c.aug?.rarity ?? ""] ?? ""}`} classList={{ best: c.best }}
-                style={{ left: `${c.x * vw() - span().left - cellW() / 2}px`, width: `${cellW()}px` }}>
-                <div class="ov-row">
-                  <Show when={c.tier} fallback={<span class="ov-none">{t("no_tier")}</span>}>
-                    <span class={`tier big t${tierRank(c.tier)}`}>{c.tier}</span>
-                  </Show>
-                  <Show when={c.best}><span class="ov-best">{t("ov_best")}</span></Show>
-                </div>
-                <div class="ov-name">{c.aug?.name}</div>
-                <div class="ov-meta">
-                  <Show when={c.pickRate != null}><span>{t("ov_pick")} <b>{pct(c.pickRate)}</b></span></Show>
-                  <Show when={c.rank}><span>{t("ov_rank", { r: c.rank, n: c.total })}</span></Show>
-                </div>
-              </div>
-            )}
-          </For>
-        </div>
+      <For each={slotted()}>
+        {(c, i) => (
+          <div class={`ov-pill ${RAR[c.aug?.rarity ?? ""] ?? ""}`} classList={{ best: c.best }}
+            style={{ left: `${c.left + cellW() / 2}px`, bottom: anchorBottom() }}>
+            <Show when={c.best}><span class="ov-star">★</span></Show>
+            <Show when={c.tier} fallback={<span class="ov-none">{t("no_tier")}</span>}>
+              <span class={`tier t${tierRank(c.tier)}`}>{c.tier}</span>
+            </Show>
+            <Show when={c.pickRate != null}><span class="ov-pick">{pct(c.pickRate)}</span></Show>
+            <Show when={c.rank}><span class="ov-rank">#{c.rank}</span></Show>
+            <Show when={test() && i() === 0}><span class="ov-tag">{t("ov_sample")}</span></Show>
+          </div>
+        )}
+      </For>
+      <div class="ov-src" style={{ left: `${span().right - 10}px`, bottom: anchorBottom() }}>
+        {cat()?.stats?.attribution?.label}
       </div>
     </Show>
   );

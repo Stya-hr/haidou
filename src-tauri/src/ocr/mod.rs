@@ -16,7 +16,7 @@ mod cards;
 #[cfg(windows)]
 mod win;
 
-pub use cards::CARD_BOTTOM;
+pub use cards::CARD_TOP;
 
 use crate::data::Catalog;
 use crate::state::AppState;

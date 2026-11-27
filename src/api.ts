@@ -65,7 +65,7 @@ export interface Settings {
   autoItems: boolean; autoSpells: boolean;
   ocrEnabled: boolean; overlayEnabled: boolean; ocrLang: string; ocrHotkey: string;
   autoUpdate: boolean;
-  floatEnabled: boolean; overlayTop: number;
+  floatEnabled: boolean; overlayBottom: number;
   floatPos: [number, number] | null; floatOffset: [number, number] | null;
 }
 

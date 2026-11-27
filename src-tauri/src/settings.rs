@@ -34,8 +34,9 @@ pub struct Settings {
     pub auto_update: bool,
     /// 选人期间显示悬浮窗
     pub float_enabled: bool,
-    /// 强化悬浮条顶部位置（占游戏画面高度的比例），默认紧贴卡片下沿
-    pub overlay_top: f32,
+    /// 强化悬浮条下沿位置（占游戏画面高度的比例）。默认在卡片上方，
+    /// 不能放在卡片下方：那里是重随按钮
+    pub overlay_bottom: f32,
     /// 悬浮窗位置（物理像素），None 表示用默认位置
     pub float_pos: Option<(i32, i32)>,
     /// 选人时悬浮窗相对客户端窗口的偏移，None 表示默认（板凳卡片下方居中）
@@ -62,7 +63,7 @@ impl Default for Settings {
             ocr_hotkey: "Ctrl+Shift+A".into(),
             auto_update: true,
             float_enabled: true,
-            overlay_top: crate::ocr::CARD_BOTTOM + 0.015,
+            overlay_bottom: crate::ocr::CARD_TOP - 0.012,
             float_pos: None,
             float_offset: None,
         }
