@@ -57,10 +57,11 @@ pub fn resolve(setting: &str) -> Lang {
     }
 }
 
-/// 界面语言 → CommunityDragon 数据语言目录（简体用国际服简中译名）
-pub fn data_locale(l: Lang) -> &'static str {
+/// 界面语言 → CommunityDragon 数据语言目录。简体默认国服译名（zh_cn），可选国际服（zh_my）
+pub fn data_locale(l: Lang, zh_variant: &str) -> &'static str {
     match l {
-        Lang::Hans => "zh_my",
+        Lang::Hans if zh_variant == "my" => "zh_my",
+        Lang::Hans => "zh_cn",
         Lang::Hant => "zh_tw",
         Lang::En => "default",
     }
@@ -69,7 +70,7 @@ pub fn data_locale(l: Lang) -> &'static str {
 /// 界面语言对应的 OCR 语言（客户端语言未知时使用）
 pub fn ocr_tag(l: Lang) -> &'static str {
     match l {
-        Lang::Hans => "zh_MY",
+        Lang::Hans => "zh_CN",
         Lang::Hant => "zh_TW",
         Lang::En => "en_US",
     }

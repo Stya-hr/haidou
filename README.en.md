@@ -38,10 +38,10 @@
 | 📊 | **Win rate · Tier · Pick rate** | Champions: S+/S/A/B/C/D tier + win rate + pick rate; augments: tier + pick rate |
 | 🛠️ | **Build archetypes** | e.g. "AP burst": core items → common follow-ups, with tier, win rate and pick rate; plus boots, situational items and augment styles |
 | 📥 | **Item-set import** | Writes a client item set that shows up in the in-game shop; one block per archetype; optional auto-import once your champion is final |
-| ✨ | **Summoner spells** | One click or automatic (off by default) |
-| 🔍 | **Augment OCR** | Scans at game start, on level-ups (3/7/11/15) and while dead, or on hotkey `Ctrl+Shift+A`; matches **Simplified Chinese (both CN and Garena/SEA translations), Traditional Chinese and English** names |
+| ✨ | **Summoner spells** | One click or automatic (on by default) |
+| 🔍 | **Augment OCR** | Scans at game start, on level-ups (3/7/11/15) and while dead, or on hotkey `Ctrl+Shift+A`; installed OCR engines are detected automatically; matches **Simplified Chinese (both CN and Garena/SEA translations), Traditional Chinese and English** names |
 | 🪟 | **In-game overlay** | Tier and pick rate under each augment card; transparent, always-on-top, click-through |
-| 🌐 | **Three languages** | 简体中文 / 繁體中文 / English, following the system by default; champion, augment and item names follow the UI language; settings save and apply instantly |
+| 🌐 | **Three languages** | 简体中文 / 繁體中文 / English (Simplified Chinese by default; China-server or global naming selectable); champion, augment and item names follow the UI language; settings save and apply instantly |
 | 🔄 | **Auto-updating data** | Checks in the background and pulls new patches/stats with a notice; never during games or champ select; can be turned off |
 | 📦 | **Portable** | Unzip and run; all data lives in `hexpilot-data/` next to the executable |
 

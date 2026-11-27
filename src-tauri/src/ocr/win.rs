@@ -22,27 +22,39 @@ const REGION: (f32, f32, f32, f32) = (0.10, 0.10, 0.90, 0.78); // left, top, rig
 
 type Reply = tokio::sync::oneshot::Sender<Result<Option<Scan>>>;
 
+enum Msg {
+    Scan(String, Reply),
+    Installed(tokio::sync::oneshot::Sender<Vec<String>>),
+}
+
 /// WinRT 需要初始化过的线程，所以 OCR 固定在一个专用线程里执行；
 /// 每种语言的引擎首次使用时创建并缓存。
 pub struct Worker {
-    tx: std::sync::mpsc::Sender<(String, Reply)>,
+    tx: std::sync::mpsc::Sender<Msg>,
 }
 
 impl Worker {
     pub fn spawn() -> Self {
-        let (tx, rx) = std::sync::mpsc::channel::<(String, Reply)>();
+        let (tx, rx) = std::sync::mpsc::channel::<Msg>();
         std::thread::Builder::new()
             .name("ocr".into())
             .spawn(move || {
                 let _ = unsafe { RoInitialize(RO_INIT_MULTITHREADED) };
                 let mut engines: HashMap<String, Option<OcrEngine>> = HashMap::new();
-                for (lang, reply) in rx {
-                    let engine = engines.entry(lang.clone()).or_insert_with(|| create_engine(&lang));
-                    let r = match engine {
-                        Some(e) => scan(e),
-                        None => Err(EngineUnavailable(lang).into()),
-                    };
-                    let _ = reply.send(r);
+                for msg in rx {
+                    match msg {
+                        Msg::Scan(lang, reply) => {
+                            let engine = engines.entry(lang.clone()).or_insert_with(|| create_engine(&lang));
+                            let r = match engine {
+                                Some(e) => scan(e),
+                                None => Err(EngineUnavailable(lang).into()),
+                            };
+                            let _ = reply.send(r);
+                        }
+                        Msg::Installed(reply) => {
+                            let _ = reply.send(installed_langs());
+                        }
+                    }
                 }
             })
             .expect("无法创建 OCR 线程");
@@ -51,9 +63,23 @@ impl Worker {
 
     pub async fn scan(&self, lang: &str) -> Result<Option<Scan>> {
         let (tx, rx) = tokio::sync::oneshot::channel();
-        self.tx.send((lang.to_string(), tx)).map_err(|_| anyhow!("OCR worker exited"))?;
+        self.tx.send(Msg::Scan(lang.to_string(), tx)).map_err(|_| anyhow!("OCR worker exited"))?;
         rx.await.map_err(|_| anyhow!("OCR worker not responding"))?
     }
+
+    /// 系统已安装的 OCR 语言标签，如 ["zh-Hans-CN", "en-US"]
+    pub async fn installed(&self) -> Vec<String> {
+        let (tx, rx) = tokio::sync::oneshot::channel();
+        if self.tx.send(Msg::Installed(tx)).is_err() {
+            return Vec::new();
+        }
+        rx.await.unwrap_or_default()
+    }
+}
+
+fn installed_langs() -> Vec<String> {
+    let Ok(list) = OcrEngine::AvailableRecognizerLanguages() else { return Vec::new() };
+    list.into_iter().filter_map(|l| l.LanguageTag().ok().map(|t| t.to_string())).collect()
 }
 
 /// 只接受与请求语言一致的引擎；不回退到用户界面语言，避免用英文引擎去读中文卡片

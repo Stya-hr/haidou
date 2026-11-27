@@ -10,7 +10,7 @@ type Tab = "select" | "augments" | "settings";
 
 const EMPTY: Snapshot = {
   connected: false, phase: "None", queueId: null, champSelect: null, lastChampionId: 0,
-  liveLevel: null, liveDead: false, windowMode: null, clientLocale: null, ocrLang: null, offer: [], ocrError: null, sync: null,
+  liveLevel: null, liveDead: false, windowMode: null, clientLocale: null, ocrLang: null, ocrInstalled: [], offer: [], ocrError: null, sync: null,
 };
 
 const rarityText = (r: string) => t((["silver", "gold", "prismatic"].includes(r) ? r : "other") as Key);
@@ -545,6 +545,14 @@ function SettingsView(p: { snap: Snapshot; cat: Catalog | null; notify: (m: stri
             <For each={UI_LANGS}>{([v, label]) => <option value={v}>{label}</option>}</For>
           </select>
         </label>
+        <Show when={lang() === "zh-Hans"}>
+          <label>{t("s_zh_variant")}
+            <select value={s()!.zhVariant} onChange={(e) => patch("zhVariant", e.currentTarget.value)}>
+              <option value="cn">{t("s_zh_cn")}</option>
+              <option value="my">{t("s_zh_my")}</option>
+            </select>
+          </label>
+        </Show>
         {check("alwaysOnTop", "s_on_top")}
       </section>
 
@@ -572,6 +580,11 @@ function SettingsView(p: { snap: Snapshot; cat: Catalog | null; notify: (m: stri
             <option value="zh-Hant">{t("s_ocr_hant")}</option>
             <option value="en-US">English</option>
           </select>
+          <span class="caption">
+            {(p.snap.ocrInstalled ?? []).length
+              ? `${t("s_ocr_detected")}：${p.snap.ocrInstalled.join(" · ")}`
+              : t("s_ocr_none")}
+          </span>
         </label>
         {text("ocrHotkey", "s_hotkey", "Ctrl+Shift+A")}
 

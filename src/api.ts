@@ -20,6 +20,7 @@ export interface Snapshot {
   windowMode: number | null;
   clientLocale: string | null;
   ocrLang: string | null;
+  ocrInstalled: string[];
   offer: OfferCard[];
   ocrError: string | null;
   sync: { stage: "checking" | "static" | "stats"; done: number; total: number } | null;
@@ -59,7 +60,7 @@ export interface Catalog {
 }
 export interface Settings {
   autoAccept: boolean; acceptDelayMs: number; alwaysOnTop: boolean;
-  leagueDir: string; statsSource: string; statsUrl: string; cdragonBase: string; uiLang: string;
+  leagueDir: string; statsSource: string; statsUrl: string; cdragonBase: string; uiLang: string; zhVariant: string;
   autoItems: boolean; autoSpells: boolean;
   ocrEnabled: boolean; overlayEnabled: boolean; ocrLang: string; ocrHotkey: string;
   autoUpdate: boolean;

@@ -18,6 +18,8 @@ pub struct Settings {
     pub cdragon_base: String,
     /// 界面语言："auto"（跟随系统）| "zh-Hans" | "zh-Hant" | "en"；数据语言随之变化
     pub ui_lang: String,
+    /// 简体中文用哪套译名："cn" 国服（默认）| "my" 国际服
+    pub zh_variant: String,
     /// 大乱斗禁用符文，所以只有出装和召唤师技能
     pub auto_items: bool,
     pub auto_spells: bool,
@@ -42,9 +44,10 @@ impl Default for Settings {
             stats_source: "arammeta".into(),
             stats_url: String::new(),
             cdragon_base: "https://raw.communitydragon.org".into(),
-            ui_lang: "auto".into(),
+            ui_lang: "zh-Hans".into(),
+            zh_variant: "cn".into(),
             auto_items: true,
-            auto_spells: false,
+            auto_spells: true,
             ocr_enabled: true,
             overlay_enabled: true,
             ocr_lang: "auto".into(),

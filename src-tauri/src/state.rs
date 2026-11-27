@@ -53,6 +53,8 @@ pub struct Snapshot {
     pub client_locale: Option<String>,
     /// 当前使用的 OCR 语言
     pub ocr_lang: Option<String>,
+    /// 系统已安装的 OCR 语言
+    pub ocr_installed: Vec<String>,
     /// OCR 识别到的当前强化卡片
     pub offer: Vec<crate::ocr::OfferCard>,
     pub ocr_error: Option<String>,

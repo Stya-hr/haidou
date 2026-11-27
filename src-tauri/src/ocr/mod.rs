@@ -146,6 +146,51 @@ fn worker() -> &'static win::Worker {
     W.get_or_init(win::Worker::spawn)
 }
 
+/// 检测系统已安装的 OCR 语言（非 Windows 返回空）
+pub async fn installed() -> Vec<String> {
+    #[cfg(windows)]
+    {
+        worker().installed().await
+    }
+    #[cfg(not(windows))]
+    {
+        Vec::new()
+    }
+}
+
+/// 把期望的语言（如 "zh-Hans"）解析成已安装的具体标签（如 "zh-Hans-CN"）。
+/// 期望的都没装时，退而使用其他已装的引擎（中文优先），保证有引擎可用；
+/// 检测不到已安装列表时原样返回期望列表。
+pub fn resolve_langs(wanted: &[String], installed: &[String]) -> Vec<String> {
+    if installed.is_empty() {
+        return wanted.to_vec();
+    }
+    let aliases = |w: &str| -> Vec<String> {
+        let w = w.to_lowercase();
+        match w.as_str() {
+            "zh-hans" => vec!["zh-hans".into(), "zh-cn".into(), "zh-sg".into()],
+            "zh-hant" => vec!["zh-hant".into(), "zh-tw".into(), "zh-hk".into(), "zh-mo".into()],
+            _ => vec![w.clone(), w.split('-').next().unwrap_or_default().to_string()],
+        }
+    };
+    let mut out: Vec<String> = Vec::new();
+    for w in wanted {
+        let al = aliases(w);
+        for tag in installed {
+            let t = tag.to_lowercase();
+            if al.iter().any(|a| t == *a || t.starts_with(&format!("{a}-"))) && !out.contains(tag) {
+                out.push(tag.clone());
+            }
+        }
+    }
+    if out.is_empty() {
+        let mut rest: Vec<String> = installed.to_vec();
+        rest.sort_by_key(|t| !t.to_lowercase().starts_with("zh"));
+        out = rest;
+    }
+    out
+}
+
 async fn scan_once(lang: &str) -> anyhow::Result<Option<Scan>> {
     #[cfg(windows)]
     {
@@ -211,7 +256,9 @@ pub async fn run(app: AppHandle, state: Arc<AppState>) {
         }
 
         let client_locale = state.client_locale.read().unwrap().clone();
-        let langs: Vec<String> = crate::settings::ocr_langs(&lang_setting, client_locale.as_deref())
+        let wanted = crate::settings::ocr_langs(&lang_setting, client_locale.as_deref());
+        let installed = state.snapshot.lock().unwrap().ocr_installed.clone();
+        let langs: Vec<String> = resolve_langs(&wanted, &installed)
             .into_iter()
             .filter(|l| !unavailable.contains(l))
             .collect();
@@ -349,6 +396,19 @@ mod tests {
             let o = match_offer(&[line(a, 0.2, 0.3), line(b, 0.5, 0.3)], &n);
             assert_eq!(o.iter().map(|c| c.augment_id).collect::<Vec<_>>(), vec![2103, 1025], "{a} {b}");
         }
+    }
+
+    #[test]
+    fn resolve_installed_engines() {
+        let s = |v: &[&str]| v.iter().map(|x| x.to_string()).collect::<Vec<_>>();
+        let inst = s(&["en-US", "zh-Hans-CN"]);
+        assert_eq!(resolve_langs(&s(&["zh-Hans", "zh-Hant"]), &inst), s(&["zh-Hans-CN"]));
+        assert_eq!(resolve_langs(&s(&["zh-Hant", "zh-Hans"]), &s(&["zh-TW", "zh-CN"])), s(&["zh-TW", "zh-CN"]));
+        // 期望的中文都没装：退回已装的引擎
+        assert_eq!(resolve_langs(&s(&["zh-Hant"]), &s(&["en-US"])), s(&["en-US"]));
+        assert_eq!(resolve_langs(&s(&["en-us"]), &inst), s(&["en-US"]));
+        // 检测不到：原样返回
+        assert_eq!(resolve_langs(&s(&["zh-Hans"]), &[]), s(&["zh-Hans"]));
     }
 
     #[test]

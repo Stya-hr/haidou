@@ -314,8 +314,9 @@ fn publish(app: &AppHandle, state: &AppState, cat: Catalog) {
 }
 
 /// 当前生效的数据语言：跟随界面语言
-pub fn effective_locale(_state: &AppState) -> String {
-    crate::i18n::data_locale(crate::i18n::get()).to_string()
+pub fn effective_locale(state: &AppState) -> String {
+    let variant = state.settings.read().unwrap().zh_variant.clone();
+    crate::i18n::data_locale(crate::i18n::get(), &variant).to_string()
 }
 
 fn progress(app: &AppHandle, state: &AppState, stage: &'static str, done: u32, total: u32) {

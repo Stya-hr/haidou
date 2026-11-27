@@ -60,7 +60,8 @@ async fn save_settings(app: AppHandle, state: S<'_>, settings: Settings) -> Resu
     let data_changed = old.stats_url != settings.stats_url
         || old.stats_source != settings.stats_source
         || old.cdragon_base != settings.cdragon_base
-        || old.ui_lang != settings.ui_lang;
+        || old.ui_lang != settings.ui_lang
+        || old.zh_variant != settings.zh_variant;
     if data_changed {
         let st = state.inner().clone();
         tauri::async_runtime::spawn(async move {
@@ -220,6 +221,14 @@ pub fn run() {
                 }
             });
             tauri::async_runtime::spawn(data::auto_update(app.handle().clone(), state.clone()));
+            {
+                let (h, st) = (app.handle().clone(), state.clone());
+                tauri::async_runtime::spawn(async move {
+                    let langs = ocr::installed().await;
+                    log::info!("已安装的 OCR 语言：{langs:?}");
+                    st.update(&h, |s| s.ocr_installed = langs);
+                });
+            }
             tauri::async_runtime::spawn(lcu::supervise(app.handle().clone(), state));
             Ok(())
         })
