@@ -23,6 +23,7 @@ export interface Snapshot {
   ocrInstalled: string[];
   offer: OfferCard[];
   ocrError: string | null;
+  ocrDebug: { at: number; status: "no_game" | "background" | "scanned"; lines: number; matched: number; lang: string } | null;
   sync: { stage: "checking" | "static" | "stats"; done: number; total: number } | null;
 }
 
@@ -64,6 +65,8 @@ export interface Settings {
   autoItems: boolean; autoSpells: boolean;
   ocrEnabled: boolean; overlayEnabled: boolean; ocrLang: string; ocrHotkey: string;
   autoUpdate: boolean;
+  floatEnabled: boolean; overlayOffsetY: number;
+  floatPos: [number, number] | null; floatOffset: [number, number] | null;
 }
 
 export const api = {
@@ -80,6 +83,8 @@ export const api = {
   ensureChampion: (championId: number) => invoke<void>("ensure_champion", { championId }),
   openLink: (url: string) => invoke<void>("open_link", { url }),
   ocrScanNow: () => invoke<void>("ocr_scan_now"),
+  floatDismiss: () => invoke<void>("float_dismiss"),
+  overlayTest: () => invoke<void>("overlay_test"),
   setBorderless: () => invoke<void>("set_borderless"),
 };
 

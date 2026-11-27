@@ -1,6 +1,6 @@
 //! Windows 实现：GDI 截屏 + Windows.Media.Ocr（系统自带，无需额外模型）。
 
-use super::{EngineUnavailable, Line, Scan};
+use super::{EngineUnavailable, Line, Outcome, Scan};
 use std::collections::HashMap;
 use anyhow::{anyhow, bail, Result};
 use std::ffi::c_void;
@@ -20,7 +20,7 @@ use windows::Win32::UI::WindowsAndMessaging::{FindWindowW, GetClientRect, GetFor
 /// 截取区域：强化卡片位于画面中部，只截这一块以降低 OCR 耗时
 const REGION: (f32, f32, f32, f32) = (0.10, 0.10, 0.90, 0.78); // left, top, right, bottom
 
-type Reply = tokio::sync::oneshot::Sender<Result<Option<Scan>>>;
+type Reply = tokio::sync::oneshot::Sender<Result<Outcome>>;
 
 enum Msg {
     Scan(String, Reply),
@@ -61,7 +61,7 @@ impl Worker {
         Self { tx }
     }
 
-    pub async fn scan(&self, lang: &str) -> Result<Option<Scan>> {
+    pub async fn scan(&self, lang: &str) -> Result<Outcome> {
         let (tx, rx) = tokio::sync::oneshot::channel();
         self.tx.send(Msg::Scan(lang.to_string(), tx)).map_err(|_| anyhow!("OCR worker exited"))?;
         rx.await.map_err(|_| anyhow!("OCR worker not responding"))?
@@ -149,24 +149,32 @@ fn capture(left: i32, top: i32, width: i32, height: i32) -> Result<Capture> {
     }
 }
 
-fn scan(engine: &OcrEngine) -> Result<Option<Scan>> {
-    // 只按窗口类名查找游戏窗口，不打开游戏进程
-    let Ok(hwnd) = (unsafe { FindWindowW(w!("RiotWindowClass"), PCWSTR::null()) }) else {
-        return Ok(None);
-    };
-    if hwnd.is_invalid() || unsafe { GetForegroundWindow() } != hwnd {
-        return Ok(None);
-    }
+/// 只按窗口类名查找游戏窗口，不打开游戏进程
+fn find_game() -> Option<windows::Win32::Foundation::HWND> {
+    let hwnd = unsafe { FindWindowW(w!("RiotWindowClass"), PCWSTR::null()) }.ok()?;
+    (!hwnd.is_invalid()).then_some(hwnd)
+}
+
+/// 游戏画面在屏幕上的区域（x, y, w, h），找不到或太小返回 None
+pub fn game_rect() -> Option<(i32, i32, i32, i32)> {
+    let hwnd = find_game()?;
     let mut rc = RECT::default();
-    unsafe { GetClientRect(hwnd, &mut rc)? };
+    unsafe { GetClientRect(hwnd, &mut rc) }.ok()?;
     let mut origin = POINT { x: 0, y: 0 };
     if !unsafe { ClientToScreen(hwnd, &mut origin) }.as_bool() {
-        return Ok(None);
+        return None;
     }
     let (cw, ch) = (rc.right - rc.left, rc.bottom - rc.top);
-    if cw < 320 || ch < 240 {
-        return Ok(None);
+    (cw >= 320 && ch >= 240).then_some((origin.x, origin.y, cw, ch))
+}
+
+fn scan(engine: &OcrEngine) -> Result<Outcome> {
+    let Some(hwnd) = find_game() else { return Ok(Outcome::NoGame) };
+    if unsafe { GetForegroundWindow() } != hwnd {
+        return Ok(Outcome::Background);
     }
+    let Some((ox0, oy0, cw, ch)) = game_rect() else { return Ok(Outcome::NoGame) };
+    let origin = POINT { x: ox0, y: oy0 };
 
     let (l, t, r, b) = REGION;
     let cap = capture(
@@ -205,5 +213,5 @@ fn scan(engine: &OcrEngine) -> Result<Option<Scan>> {
             h: (y1 - y0) / ch as f32,
         });
     }
-    Ok(Some(Scan { rect: (origin.x, origin.y, cw, ch), lines }))
+    Ok(Outcome::Done(Scan { rect: (origin.x, origin.y, cw, ch), lines }))
 }

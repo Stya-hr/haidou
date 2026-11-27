@@ -32,6 +32,14 @@ pub struct Settings {
     pub ocr_hotkey: String,
     /// 后台自动检查并更新数据（对局和选人期间不更新）
     pub auto_update: bool,
+    /// 选人期间显示悬浮窗
+    pub float_enabled: bool,
+    /// 强化悬浮条顶部相对卡片标题的下移量（占游戏画面高度的比例）
+    pub overlay_offset_y: f32,
+    /// 悬浮窗位置（物理像素），None 表示用默认位置
+    pub float_pos: Option<(i32, i32)>,
+    /// 选人时悬浮窗相对客户端窗口的偏移，None 表示默认（板凳卡片下方居中）
+    pub float_offset: Option<(i32, i32)>,
 }
 
 impl Default for Settings {
@@ -53,6 +61,10 @@ impl Default for Settings {
             ocr_lang: "auto".into(),
             ocr_hotkey: "Ctrl+Shift+A".into(),
             auto_update: true,
+            float_enabled: true,
+            overlay_offset_y: 0.24,
+            float_pos: None,
+            float_offset: None,
         }
     }
 }

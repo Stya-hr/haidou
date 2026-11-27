@@ -145,6 +145,23 @@ const D = {
   s_augs: ["强化", "強化", "augments"],
   s_stats: ["统计", "統計", "Stats"],
   s_not_loaded: ["未加载", "未載入", "not loaded"],
+  // 悬浮层 / 悬浮窗
+  ov_best: ["首选", "首選", "Best"],
+  ov_rank: ["本英雄第 {r}/{n}", "本英雄第 {r}/{n}", "#{r} of {n}"],
+  ov_sample: ["示例数据", "示例資料", "Sample"],
+  fl_bench: ["板凳", "板凳", "Bench"],
+  fl_build: ["出装", "出裝", "Build"],
+  fl_import: ["导入", "匯入", "Import"],
+  fl_close: ["本阶段隐藏", "本階段隱藏", "Hide for now"],
+  fl_swap_tip: ["点击交换", "點擊交換", "Click to swap"],
+  s_float: ["选人时显示悬浮窗（板凳卡片下方）", "選角時顯示懸浮窗（板凳卡片下方）", "Show floating bar in champ select (below bench)"],
+  s_overlay_y: ["悬浮条垂直位置", "懸浮條垂直位置", "Overlay bar position"],
+  s_overlay_test: ["测试悬浮层", "測試懸浮層", "Test overlay"],
+  s_overlay_test_tip: ["在游戏画面上显示 5 秒示例，用来对准卡片下沿", "在遊戲畫面上顯示 5 秒示例，用來對準卡片下緣", "Shows a 5-second sample on the game screen to line up with the cards"],
+  dbg_no_game: ["未找到游戏窗口", "找不到遊戲視窗", "Game window not found"],
+  dbg_background: ["游戏窗口不在前台", "遊戲視窗不在前景", "Game window not in foreground"],
+  dbg_scanned: ["识别到 {lines} 行文字，匹配 {matched} 张卡片", "辨識到 {lines} 行文字，配對 {matched} 張卡片", "Read {lines} lines, matched {matched} cards"],
+  dbg_last: ["最近一次识别", "最近一次辨識", "Last scan"],
   // 悬浮层
   ov_pick: ["选取", "選取", "Pick"],
 } satisfies Record<string, [string, string, string]>;

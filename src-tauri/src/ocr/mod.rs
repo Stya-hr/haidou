@@ -3,7 +3,7 @@
 //! 合规与性能：
 //! - 只截屏（与录屏软件相同的 GDI 方式），不读游戏内存、不注入、不模拟输入；
 //! - 只有游戏窗口在前台时才截图；
-//! - 平时不扫描，只在「升级后 30 秒内」或「按下热键后 30 秒内」以约 1 次/秒的频率扫描，
+//! - 平时不扫描，只在「升级后 / 阵亡时 / 按下热键后 30 秒内」以约 2 次/秒的频率扫描，
 //!   识别到卡片后持续跟踪直到卡片消失。
 
 #[cfg(windows)]
@@ -36,6 +36,41 @@ pub struct Scan {
     pub lines: Vec<Line>,
 }
 
+/// 一次扫描的结果
+#[cfg_attr(not(windows), allow(dead_code))]
+pub enum Outcome {
+    /// 没找到游戏窗口
+    NoGame,
+    /// 游戏窗口不在前台（不截图）
+    Background,
+    Done(Scan),
+}
+
+/// 最近一次识别的诊断信息，显示在强化页
+#[derive(Serialize, Clone, PartialEq, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct OcrDebug {
+    /// Unix 秒
+    pub at: u64,
+    /// "no_game" | "background" | "scanned"
+    pub status: &'static str,
+    pub lines: u32,
+    pub matched: u32,
+    pub lang: String,
+}
+
+/// 游戏画面在屏幕上的区域；非 Windows 或找不到游戏时为 None
+pub fn game_rect() -> Option<(i32, i32, i32, i32)> {
+    #[cfg(windows)]
+    {
+        win::game_rect()
+    }
+    #[cfg(not(windows))]
+    {
+        None
+    }
+}
+
 #[derive(Serialize, Clone, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct OfferCard {
@@ -47,6 +82,10 @@ pub struct OfferCard {
 }
 
 pub const SCAN_WINDOW: Duration = Duration::from_secs(30);
+/// 扫描期间的间隔
+const SCAN_INTERVAL: Duration = Duration::from_millis(500);
+/// 连续多少次认不出卡片才隐藏悬浮条
+const HIDE_AFTER_MISSES: u32 = 6;
 
 /// 打开一个扫描窗口（升级、热键、手动按钮都会调用）
 pub fn arm(state: &AppState) {
@@ -103,6 +142,11 @@ fn threshold(name_len: usize) -> f32 {
 /// 从 OCR 行中找出当前提供的强化卡片。
 /// 要求至少 2 张卡片的标题处于同一水平线，以排除画面中零星的误匹配。
 pub fn match_offer(lines: &[Line], augs: &[(i64, Vec<char>)]) -> Vec<OfferCard> {
+    match_cards(lines, augs, 2)
+}
+
+/// 同 match_offer，但可指定同一水平带内至少几张卡；悬浮条已显示时用 1 来维持显示
+pub fn match_cards(lines: &[Line], augs: &[(i64, Vec<char>)], min: usize) -> Vec<OfferCard> {
     let mut hits: Vec<OfferCard> = Vec::new();
     for l in lines {
         let t = normalize(&l.text);
@@ -131,7 +175,7 @@ pub fn match_offer(lines: &[Line], augs: &[(i64, Vec<char>)]) -> Vec<OfferCard> 
             best = group;
         }
     }
-    if best.len() < 2 {
+    if best.len() < min.max(1) {
         return Vec::new();
     }
     best.sort_by(|a, b| b.confidence.total_cmp(&a.confidence));
@@ -191,7 +235,7 @@ pub fn resolve_langs(wanted: &[String], installed: &[String]) -> Vec<String> {
     out
 }
 
-async fn scan_once(lang: &str) -> anyhow::Result<Option<Scan>> {
+async fn scan_once(lang: &str) -> anyhow::Result<Outcome> {
     #[cfg(windows)]
     {
         worker().scan(lang).await
@@ -199,7 +243,7 @@ async fn scan_once(lang: &str) -> anyhow::Result<Option<Scan>> {
     #[cfg(not(windows))]
     {
         let _ = lang;
-        Ok(None)
+        Ok(Outcome::NoGame)
     }
 }
 
@@ -229,7 +273,7 @@ pub async fn run(app: AppHandle, state: Arc<AppState>) {
     }
     let mut names: Vec<(i64, Vec<char>)> = Vec::new();
     let mut names_from: usize = 0;
-    let mut misses = 0;
+    let mut misses: u32 = 0;
     // 多个 OCR 语言轮流尝试，命中后本局锁定该语言
     let mut locked: Option<String> = None;
     let mut unavailable: HashSet<String> = HashSet::new();
@@ -243,7 +287,8 @@ pub async fn run(app: AppHandle, state: Arc<AppState>) {
         let armed = state.ocr_until.lock().unwrap().is_some_and(|t| Instant::now() < t);
         let showing = !state.snapshot.lock().unwrap().offer.is_empty();
         if !enabled || !(armed || showing) {
-            tokio::time::sleep(Duration::from_millis(500)).await;
+            // 触发（升级 / 阵亡 / 热键）后 200ms 内开始扫描
+            tokio::time::sleep(Duration::from_millis(200)).await;
             continue;
         }
 
@@ -276,17 +321,28 @@ pub async fn run(app: AppHandle, state: Arc<AppState>) {
 
         let started = Instant::now();
         match scan_once(&lang).await {
-            Ok(Some(scan)) => {
+            Ok(Outcome::Done(scan)) => {
                 let offer = match_offer(&scan.lines, &names);
-                if offer.is_empty() {
+                // 已显示时，只认出一张卡（如重随动画中）也视为卡片界面仍在
+                let partial = showing && offer.is_empty() && !match_cards(&scan.lines, &names, 1).is_empty();
+                let dbg = OcrDebug {
+                    at: crate::data::now_secs(),
+                    status: "scanned",
+                    lines: scan.lines.len() as u32,
+                    matched: offer.len() as u32,
+                    lang: lang.clone(),
+                };
+                state.update(&app, |s| s.ocr_debug = Some(dbg));
+                if offer.is_empty() && !partial {
                     misses += 1;
                 } else {
                     misses = 0;
                     locked = Some(lang.clone());
-                    // 识别到卡片时延长扫描窗口，方便跟踪重随后的新卡片
+                    // 卡片界面期间持续延长扫描窗口，方便跟踪重随后的新卡片
                     arm(&state);
                 }
-                if !offer.is_empty() || misses >= 2 {
+                // 卡片界面期间一直显示：连续约 3 秒（6 次）认不出卡片才隐藏，避免偶尔漏识别导致闪烁
+                if !offer.is_empty() || misses >= HIDE_AFTER_MISSES {
                     let visible = !offer.is_empty();
                     state.update(&app, |s| {
                         s.offer = offer;
@@ -296,7 +352,11 @@ pub async fn run(app: AppHandle, state: Arc<AppState>) {
                     position_overlay(&app, overlay && visible, scan.rect);
                 }
             }
-            Ok(None) => {}
+            Ok(o @ (Outcome::NoGame | Outcome::Background)) => {
+                let status = if matches!(o, Outcome::NoGame) { "no_game" } else { "background" };
+                let dbg = OcrDebug { at: crate::data::now_secs(), status, lang: lang.clone(), ..Default::default() };
+                state.update(&app, |s| s.ocr_debug = Some(dbg));
+            }
             Err(e) if e.downcast_ref::<EngineUnavailable>().is_some() => {
                 log::warn!("OCR 语言 {lang} 不可用：{e:#}");
                 unavailable.insert(lang.clone());
@@ -311,7 +371,7 @@ pub async fn run(app: AppHandle, state: Arc<AppState>) {
             }
         }
         let spent = started.elapsed();
-        tokio::time::sleep(Duration::from_millis(1000).saturating_sub(spent)).await;
+        tokio::time::sleep(SCAN_INTERVAL.saturating_sub(spent)).await;
     }
 
     state.update(&app, |s| s.offer.clear());
@@ -331,7 +391,17 @@ impl std::fmt::Display for EngineUnavailable {
 
 impl std::error::Error for EngineUnavailable {}
 
-fn position_overlay(app: &AppHandle, show: bool, (x, y, w, h): (i32, i32, i32, i32)) {
+pub fn position_overlay(app: &AppHandle, show: bool, (x, y, w, h): (i32, i32, i32, i32)) {
+    // 状态没变就什么都不做：避免每次扫描都移动 / 重设窗口造成闪烁和延迟
+    static LAST: std::sync::Mutex<Option<(bool, (i32, i32, i32, i32))>> = std::sync::Mutex::new(None);
+    {
+        let mut last = LAST.lock().unwrap();
+        let now = (show && w > 0 && h > 0, (x, y, w, h));
+        if *last == Some(now) || (!now.0 && last.is_some_and(|l| !l.0)) {
+            return;
+        }
+        *last = Some(now);
+    }
     let Some(win) = app.get_webview_window("overlay") else { return };
     if show && w > 0 && h > 0 {
         let _ = win.set_position(PhysicalPosition::new(x, y));
@@ -409,6 +479,13 @@ mod tests {
         assert_eq!(resolve_langs(&s(&["en-us"]), &inst), s(&["en-US"]));
         // 检测不到：原样返回
         assert_eq!(resolve_langs(&s(&["zh-Hans"]), &[]), s(&["zh-Hans"]));
+    }
+
+    #[test]
+    fn single_card_kept_when_min_is_one() {
+        let lines = vec![line("狙神飞星", 0.5, 0.3)];
+        assert!(match_offer(&lines, &names()).is_empty());
+        assert_eq!(match_cards(&lines, &names(), 1).len(), 1);
     }
 
     #[test]

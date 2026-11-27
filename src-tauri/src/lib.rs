@@ -1,6 +1,7 @@
 mod apply;
 mod arammeta;
 mod data;
+mod float;
 mod i18n;
 mod lcu;
 mod live;
@@ -40,7 +41,13 @@ fn get_settings(state: S) -> Settings {
 }
 
 #[tauri::command]
-async fn save_settings(app: AppHandle, state: S<'_>, settings: Settings) -> Result<(), String> {
+async fn save_settings(app: AppHandle, state: S<'_>, mut settings: Settings) -> Result<(), String> {
+    // 悬浮窗位置由拖动事件在后端记录，前端传来的可能是旧值
+    {
+        let cur = state.settings.read().unwrap();
+        settings.float_pos = cur.float_pos;
+        settings.float_offset = cur.float_offset;
+    }
     if !settings.ocr_hotkey.trim().is_empty() {
         settings
             .ocr_hotkey
@@ -54,6 +61,7 @@ async fn save_settings(app: AppHandle, state: S<'_>, settings: Settings) -> Resu
     if let Some(w) = app.get_webview_window("main") {
         let _ = w.set_always_on_top(settings.always_on_top);
     }
+    float::refresh(&app, state.inner());
     if old.ocr_hotkey != settings.ocr_hotkey {
         register_hotkey(&app, &settings.ocr_hotkey);
     }
@@ -149,6 +157,35 @@ fn open_link(app: AppHandle, url: String) -> Result<(), String> {
     app.opener().open_url(url, None::<&str>).map_err(|e| e.to_string())
 }
 
+/// 悬浮窗右上角的关闭按钮：本阶段不再自动弹出
+#[tauri::command]
+fn float_dismiss(app: AppHandle) {
+    float::dismiss(&app);
+}
+
+/// 测试悬浮层：不依赖 OCR，在游戏画面（找不到时为主显示器）上显示几秒示例徽章
+#[tauri::command]
+async fn overlay_test(app: AppHandle, state: S<'_>) -> Result<(), String> {
+    let rect = ocr::game_rect().or_else(|| {
+        let w = app.get_webview_window("main")?;
+        let m = w.primary_monitor().ok()??;
+        let (p, s) = (m.position(), m.size());
+        Some((p.x, p.y, s.width as i32, s.height as i32))
+    });
+    let rect = rect.ok_or("no monitor")?;
+    ocr::position_overlay(&app, true, rect);
+    let _ = app.emit("overlay-test", true);
+    let st = state.inner().clone();
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+        let _ = app.emit("overlay-test", false);
+        if st.snapshot.lock().unwrap().offer.is_empty() {
+            ocr::position_overlay(&app, false, rect);
+        }
+    });
+    Ok(())
+}
+
 #[tauri::command]
 fn ocr_scan_now(state: S) {
     ocr::arm(&state);
@@ -209,6 +246,20 @@ pub fn run() {
             let _ = overlay.set_ignore_cursor_events(true);
             #[cfg(not(windows))]
             let _ = overlay;
+            // 悬浮窗：选人 / 对局时显示的横条小窗，可拖动，不进任务栏
+            WebviewWindowBuilder::new(app, float::LABEL, WebviewUrl::default())
+                .title("HexPilot")
+                .inner_size(700.0, 132.0)
+                .transparent(true)
+                .decorations(false)
+                .always_on_top(true)
+                .skip_taskbar(true)
+                .visible(false)
+                .focused(false)
+                .shadow(false)
+                .resizable(false)
+                .data_directory(paths::data_dir(app.handle()).join("webview"))
+                .build()?;
             register_hotkey(app.handle(), &s.ocr_hotkey);
             *state.settings.write().unwrap() = s;
             app.manage(state.clone());
@@ -233,6 +284,12 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(|w, ev| {
+            if w.label() == float::LABEL {
+                if let tauri::WindowEvent::Moved(p) = ev {
+                    let app = w.app_handle();
+                    float::on_moved(app, &app.state::<Arc<AppState>>(), p.x, p.y);
+                }
+            }
             // 关闭主窗口即退出（悬浮层是隐藏窗口，不能让它把进程留在后台）
             if w.label() == "main" {
                 if let tauri::WindowEvent::CloseRequested { .. } = ev {
@@ -253,6 +310,8 @@ pub fn run() {
             ensure_champion,
             open_link,
             set_borderless,
+            float_dismiss,
+            overlay_test,
             ocr_scan_now
         ])
         .run(tauri::generate_context!())

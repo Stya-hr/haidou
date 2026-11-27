@@ -78,7 +78,7 @@ pub async fn supervise(app: AppHandle, state: Arc<AppState>) {
     }
 }
 
-fn set_disconnected(app: &AppHandle, state: &AppState) {
+fn set_disconnected(app: &AppHandle, state: &Arc<AppState>) {
     *state.lcu.write().unwrap() = None;
     state.update(app, |s| {
         s.connected = false;
@@ -87,6 +87,7 @@ fn set_disconnected(app: &AppHandle, state: &AppState) {
         s.queue_id = None;
         s.window_mode = None;
     });
+    crate::float::refresh(app, state);
 }
 
 async fn on_phase(app: &AppHandle, state: &Arc<AppState>, client: &LcuClient, phase: &str) {
@@ -99,6 +100,7 @@ async fn on_phase(app: &AppHandle, state: &Arc<AppState>, client: &LcuClient, ph
     if phase != "ChampSelect" {
         state.applied_champ.store(0, Ordering::SeqCst);
     }
+    crate::float::on_phase(app, state);
     match phase {
         "ChampSelect" | "InProgress" | "GameStart" | "Reconnect" => {
             if let Ok(sess) = client.get("/lol-gameflow/v1/session").await {

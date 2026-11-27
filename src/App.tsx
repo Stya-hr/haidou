@@ -10,7 +10,7 @@ type Tab = "select" | "augments" | "settings";
 
 const EMPTY: Snapshot = {
   connected: false, phase: "None", queueId: null, champSelect: null, lastChampionId: 0,
-  liveLevel: null, liveDead: false, windowMode: null, clientLocale: null, ocrLang: null, ocrInstalled: [], offer: [], ocrError: null, sync: null,
+  liveLevel: null, liveDead: false, windowMode: null, clientLocale: null, ocrLang: null, ocrInstalled: [], offer: [], ocrError: null, sync: null, ocrDebug: null,
 };
 
 const rarityText = (r: string) => t((["silver", "gold", "prismatic"].includes(r) ? r : "other") as Key);
@@ -428,6 +428,14 @@ function AugmentView(p: { snap: Snapshot; x: Ctx }) {
         </h3>
         <Show when={p.snap.ocrError}><div class="hint err">{p.snap.ocrError}</div></Show>
         <WindowModeHint snap={p.snap} notify={p.x.notify} />
+        <Show when={p.snap.ocrDebug}>
+          <div class="dbg">
+            {t("dbg_last")}（{ago(p.snap.ocrDebug!.at)}）：
+            {p.snap.ocrDebug!.status === "scanned"
+              ? t("dbg_scanned", { lines: p.snap.ocrDebug!.lines, matched: p.snap.ocrDebug!.matched })
+              : t(p.snap.ocrDebug!.status === "no_game" ? "dbg_no_game" : "dbg_background")}
+          </div>
+        </Show>
         <div class="list">
           <For each={p.snap.offer} fallback={<div class="muted">
             {p.snap.phase === "InProgress" ? t("offer_hint_ingame") : t("offer_hint_idle")}
@@ -524,7 +532,7 @@ function SettingsView(p: { snap: Snapshot; cat: Catalog | null; notify: (m: stri
     try { await api.refreshData(); p.notify(t("s_refreshed")); } catch (e) { p.notify(t("s_refresh_failed") + e); }
     setBusy(false);
   };
-  const check = (k: "autoAccept" | "alwaysOnTop" | "autoItems" | "autoSpells" | "ocrEnabled" | "overlayEnabled" | "autoUpdate", key: Key) => (
+  const check = (k: "autoAccept" | "alwaysOnTop" | "autoItems" | "autoSpells" | "ocrEnabled" | "overlayEnabled" | "autoUpdate" | "floatEnabled", key: Key) => (
     <label class="toggle"><span>{t(key)}</span><input type="checkbox" checked={s()![k]} onChange={(e) => patch(k, e.currentTarget.checked)} /></label>
   );
   const text = (k: TextKey, key: Key, ph = "") => (
@@ -558,6 +566,7 @@ function SettingsView(p: { snap: Snapshot; cat: Catalog | null; notify: (m: stri
 
       <section class="form">
         <h3>{t("s_game")}</h3>
+        {check("floatEnabled", "s_float")}
         {check("autoAccept", "s_auto_accept")}
         {text("acceptDelayMs", "s_accept_delay")}
         <div class="subgroup">
@@ -573,6 +582,14 @@ function SettingsView(p: { snap: Snapshot; cat: Catalog | null; notify: (m: stri
         <WindowModeHint snap={p.snap} notify={p.notify} always />
         {check("ocrEnabled", "s_ocr_enabled")}
         {check("overlayEnabled", "s_overlay")}
+        <label>{t("s_overlay_y")}
+          <div class="slider">
+            <input type="range" min="0.05" max="0.45" step="0.01" value={s()!.overlayOffsetY}
+              onInput={(e) => patch("overlayOffsetY", Number(e.currentTarget.value), true)} />
+            <button class="small" title={t("s_overlay_test_tip")}
+              onClick={async () => { await persist(); api.overlayTest().catch((e) => p.notify(String(e))); }}>{t("s_overlay_test")}</button>
+          </div>
+        </label>
         <label>{t("s_ocr_lang")}
           <select value={s()!.ocrLang} onChange={(e) => patch("ocrLang", e.currentTarget.value)}>
             <option value="auto">{t("s_ocr_auto")}</option>

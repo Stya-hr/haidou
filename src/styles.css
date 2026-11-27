@@ -164,16 +164,6 @@ input[type="checkbox"]:checked::after { transform: translateX(14px); background:
 .toast { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); max-width: calc(100% - 32px); padding: 8px 14px; border-radius: 10px; background: rgba(31, 42, 53, .94); border: 1px solid rgba(200, 161, 75, .5); box-shadow: 0 8px 24px rgba(0, 0, 0, .45); backdrop-filter: blur(8px); font-size: 12.5px; animation: rise .2s ease; }
 @keyframes rise { from { opacity: 0; transform: translate(-50%, 6px); } }
 
-/* ============ 游戏内悬浮层：整窗透明，只画徽章 ============ */
-html.overlay, html.overlay body { background: transparent !important; overflow: hidden; }
-.ov-badge { position: fixed; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; padding: 4px 10px 4px 4px; border-radius: 9px; background: rgba(9, 12, 16, .86); border: 1px solid rgba(200, 161, 75, .45); box-shadow: 0 4px 14px rgba(0, 0, 0, .5); }
-.ov-badge .tier { height: 24px; min-width: 32px; font-size: 14px; }
-.ov-badge.top { border-color: var(--gold-hi); box-shadow: 0 0 14px rgba(232, 200, 113, .55); }
-.ov-pick { font-size: 12.5px; color: var(--fg); font-variant-numeric: tabular-nums; }
-.ov-none { padding-left: 6px; color: var(--muted); font-size: 12px; }
-.ov-source { position: fixed; right: 10px; bottom: 8px; font-size: 11px; color: rgba(233, 228, 214, .7); text-shadow: 0 0 3px #000; }
-.saved-float { position: fixed; right: 14px; bottom: 14px; z-index: 10; padding: 4px 10px; border-radius: 10px; font-size: 11.5px; color: var(--ok); background: rgba(18, 25, 33, .92); border: 1px solid rgba(63, 185, 80, .4); animation: rise .2s ease; }
-
 /* 设置开关行：文字左、开关右 */
 .form label.toggle { flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; min-height: 30px; padding: 0 2px; font-size: 13px; color: var(--fg); cursor: pointer; }
 .subgroup { display: flex; flex-direction: column; gap: 4px; padding: 8px 10px; border-radius: var(--r-md); background: var(--surface-2); }
@@ -185,3 +175,59 @@ html.overlay, html.overlay body { background: transparent !important; overflow: 
 .aug.r-gold img { background: radial-gradient(circle at 35% 30%, #fff1c9, #d8aa4c); }
 .aug.r-prismatic img { background: radial-gradient(circle at 30% 25%, #ffffff, #c9b3ff 45%, #9fe7f2 75%, #ffc2df); }
 .form label .caption { font-size: 11px; color: var(--faint); }
+
+/* ============ 强化卡片悬浮条（覆盖游戏画面的透明窗口） ============ */
+html.overlay, html.overlay body { background: transparent !important; overflow: hidden; }
+.ov-panel { position: fixed; padding: 6px 10px 10px; border-radius: 14px; background: rgba(10, 13, 18, .82); border: 1px solid rgba(200, 161, 75, .35); box-shadow: 0 10px 30px rgba(0, 0, 0, .55); backdrop-filter: blur(6px); }
+.ov-head { display: flex; align-items: center; gap: 8px; height: 26px; padding: 0 2px 4px; font-size: 12.5px; color: var(--muted); }
+.ov-head img { width: 20px; height: 20px; border-radius: 5px; }
+.ov-head b { color: var(--fg); font-weight: 600; }
+.ov-tag { padding: 0 6px; border-radius: 8px; font-size: 11px; color: var(--teal-hi); border: 1px solid rgba(79, 179, 191, .4); }
+.ov-src { margin-left: auto; font-size: 11px; color: rgba(233, 228, 214, .55); }
+.ov-cells { position: relative; height: 92px; }
+.ov-cell { position: absolute; top: 0; height: 92px; display: flex; flex-direction: column; gap: 4px; padding: 8px 10px; border-radius: 10px; background: rgba(24, 33, 43, .92); border: 1px solid rgba(255, 255, 255, .06); border-top: 3px solid #9aa6b2; }
+.ov-cell.r-gold { border-top-color: #e2b54f; }
+.ov-cell.r-prismatic { border-top-color: #c9a6ff; }
+.ov-cell.best { border-color: var(--gold-hi); border-top-width: 3px; box-shadow: 0 0 16px rgba(232, 200, 113, .45), inset 0 0 0 1px rgba(232, 200, 113, .35); }
+.ov-row { display: flex; align-items: center; gap: 6px; }
+.tier.big { height: 26px; min-width: 38px; font-size: 15px; border-radius: 6px; }
+.ov-best { margin-left: auto; padding: 1px 8px; border-radius: 9px; font-size: 11.5px; font-weight: 700; color: #1a1200; background: linear-gradient(180deg, var(--gold-hi), var(--gold)); }
+.ov-name { font-size: 13.5px; font-weight: 600; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ov-meta { display: flex; gap: 10px; font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; }
+.ov-meta b { color: var(--fg); font-weight: 600; }
+.ov-none { color: var(--muted); font-size: 12px; }
+
+/* ============ 选人悬浮窗（板凳卡片下方的横条） ============ */
+html.floatwin, html.floatwin body { background: transparent !important; overflow: hidden; }
+.fl-panel { position: fixed; inset: 6px; display: flex; flex-direction: column; border-radius: 14px; background: rgba(12, 16, 22, .94); border: 1px solid rgba(200, 161, 75, .4); box-shadow: 0 8px 24px rgba(0, 0, 0, .5); overflow: hidden; }
+.fl-bar { display: flex; align-items: center; gap: 7px; height: 26px; padding: 0 6px 0 10px; background: rgba(255, 255, 255, .03); border-bottom: 1px solid var(--line-soft); cursor: move; }
+.fl-bar img { width: 16px; height: 16px; }
+.fl-brand { font-size: 12px; font-weight: 700; color: var(--gold-hi); }
+.fl-src { margin-left: auto; font-size: 10.5px; color: var(--faint); }
+.fl-msg { margin-left: auto; max-width: 70%; font-size: 11.5px; color: var(--teal-hi); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fl-x { width: 22px; height: 20px; padding: 0; border: 0; background: none; color: var(--muted); font-size: 16px; line-height: 1; }
+.fl-x:hover { color: var(--fg); background: rgba(255, 255, 255, .06); }
+.fl-body { flex: 1; display: flex; align-items: center; gap: 12px; padding: 0 12px; min-height: 0; }
+.fl-sep { align-self: stretch; width: 1px; margin: 12px 0; background: var(--line); }
+.fl-me { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.fl-avatar { width: 46px; height: 46px; border-radius: 10px; box-shadow: 0 0 0 2px rgba(79, 179, 191, .55); }
+.fl-name { font-weight: 700; font-size: 13.5px; white-space: nowrap; }
+.fl-sub { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+.fl-bench { display: flex; gap: 6px; }
+.fl-benchbtn { position: relative; width: 42px; height: 42px; padding: 0; border-radius: 9px; border: 1px solid var(--line); background: #000; overflow: visible; }
+.fl-benchbtn img { width: 100%; height: 100%; border-radius: 8px; display: block; }
+.fl-benchbtn:hover { border-color: var(--teal); }
+.fl-benchbtn.best { border: 2px solid var(--gold-hi); box-shadow: 0 0 10px rgba(232, 200, 113, .55); }
+.tier.mini { height: 16px; min-width: 20px; padding: 0 3px; font-size: 10px; border-radius: 4px; }
+.fl-benchbtn .tier.mini { position: absolute; right: -4px; bottom: -4px; }
+.fl-build { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.fl-archname { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.fl-items { display: flex; gap: 3px; }
+.fl-items img { width: 28px; height: 28px; border-radius: 5px; box-shadow: 0 0 0 1px var(--line); background: #000; }
+.fl-actions { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.fl-spells { display: flex; gap: 3px; }
+.fl-spells img { width: 24px; height: 24px; border-radius: 5px; }
+.fl-import { padding: 3px 12px; font-size: 12px; font-weight: 700; color: #1a1200; border: 0; background: linear-gradient(180deg, var(--gold-hi), var(--gold)); }
+.dbg { margin-bottom: 8px; padding: 0 2px; font-size: 11.5px; color: var(--muted); }
+.slider { display: flex; align-items: center; gap: 10px; }
+.slider input[type="range"] { flex: 1; height: 18px; padding: 0; background: none; border: 0; accent-color: var(--gold); }

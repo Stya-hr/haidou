@@ -1,5 +1,5 @@
 //! 游戏内只读轮询：Riot 官方 Live Client Data API（https://127.0.0.1:2999）。
-//! 每 2 秒读一次玩家列表，只取自己的等级和是否阵亡，不碰游戏进程本身。
+//! 每 1 秒读一次玩家列表，只取自己的等级和是否阵亡，不碰游戏进程本身。
 //!
 //! 海克斯大乱斗在开局和 3/7/11/15 级提供强化，且只能在阵亡时选择，
 //! 所以「升级」和「阵亡期间」都会打开 OCR 扫描窗口。
@@ -51,7 +51,7 @@ pub async fn poll(app: AppHandle, state: Arc<AppState>) {
                 s.live_level = level;
                 s.live_dead = dead;
             });
-            tokio::time::sleep(Duration::from_secs(2)).await;
+            tokio::time::sleep(Duration::from_secs(1)).await;
         }
     }
     state.update(&app, |s| {

@@ -60,6 +60,8 @@ pub struct Snapshot {
     pub ocr_error: Option<String>,
     /// 正在同步数据时有值
     pub sync: Option<SyncProgress>,
+    /// 最近一次 OCR 识别的诊断信息
+    pub ocr_debug: Option<crate::ocr::OcrDebug>,
 }
 
 #[derive(Default)]
