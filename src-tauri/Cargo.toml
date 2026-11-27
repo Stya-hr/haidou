@@ -3,6 +3,8 @@ name = "haidou"
 version = "0.1.0"
 description = "海克斯大乱斗助手（仅使用 Riot 官方允许的本地接口）"
 edition = "2021"
+license = "MIT"
+repository = "https://github.com/Stya-hr/haidou"
 
 [lib]
 name = "haidou_lib"
