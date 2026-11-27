@@ -28,9 +28,11 @@ jobs:
         with:
           name: ${{ steps.pack.outputs.name }}
           path: dist-portable/hexpilot/
-      # 推送 v* 标签时自动发布 Release
+      # 推送 v* 标签时自动发布 Release，说明取自 CHANGELOG.md 中对应版本的段落
+      - if: startsWith(github.ref, 'refs/tags/v')
+        run: node scripts/release-notes.mjs ${{ github.ref_name }} > release-notes.md
       - if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           files: dist-portable/*.zip
-          generate_release_notes: true
+          body_path: release-notes.md

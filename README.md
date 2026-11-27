@@ -56,6 +56,8 @@ pnpm tauri dev    # 开发
 pnpm portable     # 打包 zip 便携版
 ```
 
+版本更新见 [CHANGELOG](CHANGELOG.md)。
+
 ## 致谢与声明
 
 数据来自 [AramMeta](https://arammeta.com/?ref=hexpilot) 与 [CommunityDragon](https://www.communitydragon.org/)，基于 [Tauri](https://tauri.app/) 与 [SolidJS](https://www.solidjs.com/)。代码以 [MIT](LICENSE) 开源，第三方数据受各自条款约束。

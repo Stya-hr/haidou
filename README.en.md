@@ -57,6 +57,8 @@ pnpm tauri dev    # development
 pnpm portable     # portable zip
 ```
 
+See the [CHANGELOG](CHANGELOG.md) for release notes.
+
 ## Credits & legal
 
 Data from [AramMeta](https://arammeta.com/?ref=hexpilot) and [CommunityDragon](https://www.communitydragon.org/); built with [Tauri](https://tauri.app/) and [SolidJS](https://www.solidjs.com/). Code under [MIT](LICENSE); third-party data is governed by its own terms.
