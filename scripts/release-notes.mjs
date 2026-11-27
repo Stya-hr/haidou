@@ -12,5 +12,4 @@ if (start < 0) {
 let end = lines.findIndex((l, i) => i > start && l.startsWith("## "));
 if (end < 0) end = lines.length;
 const body = lines.slice(start + 1, end).join("\n").trim();
-const repo = process.env.GITHUB_REPOSITORY ?? "Stya-hr/hexpilot";
-console.log(`${body}\n\n---\n\n**下载 · Download**：\`hexpilot-${tag}-win-x64-portable.zip\`，解压后运行 \`hexpilot.exe\` · unzip and run \`hexpilot.exe\`\n\n**Full Changelog**: https://github.com/${repo}/commits/${tag}`);
+console.log(body);

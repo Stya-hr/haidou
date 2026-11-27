@@ -2,8 +2,6 @@
 
 ## v0.1.0 · 2026-11-27
 
-首个版本。First release.
-
 ### 功能
 
 - **选人推荐**：板凳席按评分排序并高亮更强的英雄，一键交换 / 重随；自动接受对局（可设延迟）
@@ -25,19 +23,3 @@
 - **In-game overlay**: tier and pick rate under each augment card, click-through
 - **Display mode**: detects fullscreen and switches to borderless in one click
 - **Also**: three-language UI, auto-updating data, auto-saved settings, portable zip
-
-### 使用要求 · Requirements
-
-- Windows 10 / 11（WebView2 一般已自带 · WebView2 usually preinstalled）
-- 游戏使用无边框或窗口模式 · Borderless or windowed mode in game
-- 安装中文或英文「光学字符识别」组件 · Windows *Optical character recognition* language component
-
-### 已知限制 · Known limitations
-
-- 尚未在真实对局中完整测试；OCR 截图区域与匹配阈值可能需要调整
-- 显示模式取值（0 全屏 / 1 窗口 / 2 无边框）来自社区资料，修改后会读回校验
-- Not yet fully tested in live games; OCR capture region and thresholds may need tuning
-- Display-mode values (0 fullscreen / 1 windowed / 2 borderless) come from community docs and are verified by read-back
-
-数据来自 [AramMeta](https://arammeta.com/?ref=hexpilot) 与 [CommunityDragon](https://www.communitydragon.org/)。不展示强化胜率（Riot 开发者政策）。
-Data from [AramMeta](https://arammeta.com/?ref=hexpilot) and [CommunityDragon](https://www.communitydragon.org/). Augment win rates are not shown (Riot developer policy).
