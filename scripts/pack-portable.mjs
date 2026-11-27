@@ -29,7 +29,8 @@ writeFileSync(join(stage, "使用说明.txt"), `海克斯领航 v${conf.version}
 统计数据：Data: AramMeta (https://arammeta.com/?ref=hexpilot)，与 Riot Games 及 AramMeta 均无隶属关系。
 `, "utf8");
 
-const name = `hexpilot-v${conf.version}-win-x64-portable`;
+// 可用 PACK_NAME 覆盖包名（nightly 用）
+const name = process.env.PACK_NAME || `hexpilot-v${conf.version}-win-x64-portable`;
 const zip = join(out, `${name}.zip`);
 // 在 GitHub Actions 里把包名传给后续步骤（Artifact 名称）
 if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `name=${name}\n`);

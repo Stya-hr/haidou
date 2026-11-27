@@ -8,7 +8,7 @@
 
 <p align="center">
   <a href="https://github.com/Stya-hr/hexpilot/actions/workflows/portable.yml"><img src="https://github.com/Stya-hr/hexpilot/actions/workflows/portable.yml/badge.svg" alt="Build"></a>
-  <a href="https://github.com/Stya-hr/hexpilot/releases"><img src="https://img.shields.io/github/v/release/Stya-hr/hexpilot?include_prereleases&label=release&color=c8a14b" alt="Release"></a>
+  <a href="https://github.com/Stya-hr/hexpilot/releases"><img src="https://img.shields.io/github/v/release/Stya-hr/hexpilot?label=release&color=c8a14b" alt="Release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-c8a14b" alt="License: MIT"></a>
 </p>
 <p align="center">
