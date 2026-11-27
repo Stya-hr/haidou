@@ -37,8 +37,8 @@
   </g>
 
   <!-- 标题 -->
-  <text x="420" y="138" font-family="'Microsoft YaHei UI','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="72" font-weight="700" fill="url(#gold)" letter-spacing="6">海斗助手</text>
-  <text x="424" y="190" font-family="'Segoe UI','Inter','Helvetica Neue',Arial,sans-serif" font-size="30" font-weight="600" fill="#e6e1d3" letter-spacing="1">Haidou · ARAM Mayhem Companion</text>
+  <text x="420" y="138" font-family="'Microsoft YaHei UI','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="72" font-weight="700" fill="url(#gold)" letter-spacing="6">海克斯领航</text>
+  <text x="424" y="190" font-family="'Segoe UI','Inter','Helvetica Neue',Arial,sans-serif" font-size="30" font-weight="600" fill="#e6e1d3" letter-spacing="1">HexPilot · ARAM Mayhem Companion</text>
   <text x="424" y="230" font-family="'Microsoft YaHei UI','PingFang SC','Noto Sans CJK SC',sans-serif" font-size="22" fill="#8b949e">海克斯大乱斗助手 · 选人推荐 · 出装导入 · 强化识别</text>
 
   <!-- 标签 -->

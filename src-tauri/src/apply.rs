@@ -1,7 +1,7 @@
 //! 把推荐写入客户端：装备方案、召唤师技能（海克斯大乱斗禁用符文，所以不处理符文页）。
 //! 只通过 LCU 接口操作，等同于玩家在客户端里手动设置。
 //!
-//! 安全原则：只创建/替换本工具自己创建的装备方案（uid 以 `haidou-` 开头），
+//! 安全原则：只创建/替换本工具自己创建的装备方案（uid 以 `hexpilot-` 开头），
 //! 绝不删除或覆盖玩家自己的方案。
 
 use crate::data::{Catalog, ChampStats, ItemBuild};
@@ -10,8 +10,8 @@ use anyhow::{bail, Context, Result};
 use reqwest::Method;
 use serde_json::{json, Value};
 
-const PAGE_PREFIX: &str = "海斗";
-const SET_PREFIX: &str = "haidou-";
+const PAGE_PREFIX: &str = "HexPilot";
+const SET_PREFIX: &str = "hexpilot-";
 
 pub fn champ_label(cat: &Catalog, champ_id: i64) -> String {
     cat.champions
@@ -70,7 +70,7 @@ fn pct(v: Option<f64>) -> String {
     v.map(|x| format!("{:.1}%", x * 100.0)).unwrap_or_default()
 }
 
-/// 游戏商店里显示的方案名，例如「海斗 · 阿狸 S 胜率52.3% · v16.23」
+/// 游戏商店里显示的方案名，例如「HexPilot · 阿狸 S 胜率52.3% · v16.23」
 fn set_title(label: &str, st: &ChampStats, cat: &Catalog) -> String {
     let wr = st.win_rate.map(|_| format!(" 胜率{}", pct(st.win_rate))).unwrap_or_default();
     format!("{PAGE_PREFIX} · {label} {}{wr} · v{}", st.tier, cat.patch).replace("  ", " ")
@@ -168,6 +168,6 @@ mod tests {
         assert_eq!(titles, vec!["鞋子", "AP爆發 [S] 胜率52.2% 选取38.4%", "可选装"]);
         assert_eq!(b[1]["items"][2]["id"], "3089");
         let cat = Catalog { patch: "16.23".into(), ..Default::default() };
-        assert_eq!(set_title("阿狸", &st, &cat), "海斗 · 阿狸 S 胜率52.3% · v16.23");
+        assert_eq!(set_title("阿狸", &st, &cat), "HexPilot · 阿狸 S 胜率52.3% · v16.23");
     }
 }

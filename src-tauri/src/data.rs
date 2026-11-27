@@ -265,7 +265,7 @@ pub fn build_things(base: &str, v: &Value) -> Vec<Thing> {
 pub async fn fetch_json(http: &reqwest::Client, url: &str) -> Result<Value> {
     let r = http
         .get(url)
-        .header("User-Agent", "haidou/0.1")
+        .header("User-Agent", "hexpilot/0.1")
         .timeout(Duration::from_secs(20))
         .send()
         .await

@@ -1,7 +1,7 @@
 //! arammeta.com 适配器。
 //!
 //! 遵守其数据使用条款：
-//! - 署名：所有显示其数字的地方都显示可点击的 "Data: AramMeta"，链接带 `?ref=haidou`；
+//! - 署名：所有显示其数字的地方都显示可点击的 "Data: AramMeta"，链接带 `?ref=hexpilot`；
 //! - 轻量访问：总表每个版本拉一次（同版本内最多 3 天刷新一次）；英雄详情只在需要时拉，
 //!   并按数据版本永久缓存，同一版本不会重复请求；
 //! - 不导出、不转发原始表：本地只缓存换算后的档位/选取率/出装，不保存原始 JSON。
@@ -17,7 +17,7 @@ use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub const SITE: &str = "https://arammeta.com";
-pub const REF: &str = "ref=haidou";
+pub const REF: &str = "ref=hexpilot";
 const REFRESH_SECS: u64 = 3 * 24 * 3600;
 
 const RARITIES: [&str; 3] = ["kPrismatic", "kGold", "kSilver"];
@@ -392,7 +392,7 @@ mod tests {
         assert_eq!(p.augments["2009"].tier, "D");
         assert_eq!(
             p.detail_url,
-            "https://arammeta.com/api/champions/{id}.json?v=20261124-87dcad327aa5&ref=haidou"
+            "https://arammeta.com/api/champions/{id}.json?v=20261124-87dcad327aa5&ref=hexpilot"
         );
         // 强化胜率不会出现在结果里
         let s = serde_json::to_string(&p.augments).unwrap();

@@ -172,7 +172,7 @@ pub fn run() {
             // 便携版：WebView2 用户数据也放在 exe 旁边
             let webview_dir = paths::data_dir(app.handle()).join("webview");
             WebviewWindowBuilder::new(app, "main", WebviewUrl::default())
-                .title("海斗助手")
+                .title("HexPilot · 海克斯领航")
                 .inner_size(380.0, 680.0)
                 .min_inner_size(340.0, 420.0)
                 .always_on_top(s.always_on_top)
@@ -180,7 +180,7 @@ pub fn run() {
                 .build()?;
             // 悬浮层：透明、置顶、鼠标穿透、不抢焦点、不进任务栏
             let overlay = WebviewWindowBuilder::new(app, "overlay", WebviewUrl::default())
-                .title("海斗悬浮层")
+                .title("HexPilot 悬浮层")
                 .inner_size(800.0, 600.0)
                 .transparent(true)
                 .decorations(false)
