@@ -2,14 +2,14 @@ import { listen } from "@tauri-apps/api/event";
 import { createEffect, createMemo, createSignal, For, JSX, on, onCleanup, onMount, Show } from "solid-js";
 import {
   api, Archetype, augInfo, Augment, Catalog, Champion, champScore, ChampStats, championUrl, inPool,
-  MAYHEM_QUEUE, pct, PHASE_TEXT, Settings, Snapshot, Thing, tierRank,
+  MAYHEM_QUEUE, pct, PHASE_TEXT, Settings, Snapshot, Thing, tierRank, WINDOW_MODE_TEXT,
 } from "./api";
 
 type Tab = "select" | "augments" | "settings";
 
 const EMPTY: Snapshot = {
   connected: false, phase: "None", queueId: null, champSelect: null, lastChampionId: 0,
-  liveLevel: null, liveDead: false, clientLocale: null, ocrLang: null, offer: [], ocrError: null,
+  liveLevel: null, liveDead: false, windowMode: null, clientLocale: null, ocrLang: null, offer: [], ocrError: null,
 };
 
 const RARITY_TEXT: Record<string, string> = { silver: "白银", gold: "黄金", prismatic: "棱彩", other: "其他" };
@@ -106,6 +106,32 @@ function Source(p: { cat: Catalog | null; url?: string }) {
       <a class="source" href="#" onClick={(e) => { e.preventDefault(); api.openLink(p.url ?? a()!.url).catch(() => {}); }}>
         {a()!.label}
       </a>
+    </Show>
+  );
+}
+
+/** 显示模式提醒：全屏时无法识别强化，提供一键改为无边框 */
+function WindowModeHint(p: { snap: Snapshot; notify: (m: string) => void; always?: boolean }) {
+  const [busy, setBusy] = createSignal(false);
+  const fix = async () => {
+    setBusy(true);
+    try { await api.setBorderless(); p.notify("已改为无边框，下次进游戏生效"); } catch (e) { p.notify(String(e)); }
+    setBusy(false);
+  };
+  const mode = () => p.snap.windowMode;
+  const canFix = () => p.snap.connected && p.snap.phase !== "InProgress" && mode() !== 2;
+  return (
+    <Show when={p.always || mode() === 0}>
+      <div class="hint" classList={{ warn: mode() === 0 }}>
+        游戏显示模式：<b>{mode() == null ? "未知" : WINDOW_MODE_TEXT[mode()!] ?? mode()}</b>
+        <Show when={mode() === 0}> · 全屏下无法识别强化、悬浮层也不显示</Show>
+        <Show when={canFix()}>
+          <button class="small right" disabled={busy()} onClick={fix}>改为无边框</button>
+        </Show>
+        <Show when={p.snap.phase === "InProgress" && mode() !== 2}>
+          <span class="muted"> · 对局中请按 Esc → 视频 → 窗口模式 调整</span>
+        </Show>
+      </div>
     </Show>
   );
 }
@@ -289,6 +315,7 @@ function SelectView(p: { snap: Snapshot; x: Ctx }) {
       <TierList x={p.x} />
     </>}>
       <Show when={!p.x.cat?.stats}><div class="hint">统计数据未加载，可在「设置」中检查数据来源。</div></Show>
+      <WindowModeHint snap={p.snap} notify={p.x.notify} />
 
       <section>
         <h3>我的英雄
@@ -361,6 +388,7 @@ function AugmentView(p: { snap: Snapshot; x: Ctx }) {
           <button class="small right" onClick={() => api.ocrScanNow()}>立即识别</button>
         </h3>
         <Show when={p.snap.ocrError}><div class="hint err">{p.snap.ocrError}</div></Show>
+        <WindowModeHint snap={p.snap} notify={p.x.notify} />
         <div class="list">
           <For each={p.snap.offer} fallback={<div class="muted">
             {p.snap.phase === "InProgress" ? "升级或阵亡时自动识别，也可按热键 / 点「立即识别」（需无边框模式）" : "对局中可用"}
@@ -463,6 +491,7 @@ function SettingsView(p: { snap: Snapshot; cat: Catalog | null; notify: (m: stri
         </div>
 
         <h3>强化识别</h3>
+        <WindowModeHint snap={p.snap} notify={p.notify} always />
         {check("ocrEnabled", "对局中 OCR 识别海克斯强化")}
         {check("overlayEnabled", "在游戏画面上显示档位悬浮层")}
         <label>OCR 语言

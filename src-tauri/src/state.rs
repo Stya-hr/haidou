@@ -38,6 +38,8 @@ pub struct Snapshot {
     pub last_champion_id: i64,
     pub live_level: Option<i64>,
     pub live_dead: bool,
+    /// 游戏显示模式（General.WindowMode）：0 全屏 / 1 窗口 / 2 无边框
+    pub window_mode: Option<i64>,
     /// 客户端语言，如 zh_TW
     pub client_locale: Option<String>,
     /// 当前使用的 OCR 语言

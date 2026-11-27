@@ -35,7 +35,11 @@ pub async fn supervise(app: AppHandle, state: Arc<AppState>) {
         };
 
         *state.lcu.write().unwrap() = Some(client.clone());
-        state.update(&app, |s| s.connected = true);
+        let mode = read_window_mode(&client).await;
+        state.update(&app, |s| {
+            s.connected = true;
+            s.window_mode = mode;
+        });
         log::info!("已连接 LCU，端口 {}", creds.port);
 
         let (tx, mut rx) = mpsc::channel::<ws::LcuEvent>(64);
@@ -81,6 +85,7 @@ fn set_disconnected(app: &AppHandle, state: &AppState) {
         s.phase = "None".into();
         s.champ_select = None;
         s.queue_id = None;
+        s.window_mode = None;
     });
 }
 
@@ -103,6 +108,12 @@ async fn on_phase(app: &AppHandle, state: &Arc<AppState>, client: &LcuClient, ph
             if phase == "ChampSelect" {
                 if let Ok(cs) = client.get("/lol-champ-select/v1/session").await {
                     on_session(app, state, &cs);
+                }
+                // 进游戏前检查显示模式：独占全屏下无法识别强化、悬浮层也无法显示
+                let mode = read_window_mode(client).await;
+                state.update(app, |s| s.window_mode = mode);
+                if mode == Some(0) && state.settings.read().unwrap().ocr_enabled {
+                    let _ = app.emit("toast", "当前是全屏模式，强化识别不可用。可在「选人」页一键改为无边框".to_string());
                 }
             }
             if phase == "InProgress" {
@@ -198,6 +209,25 @@ fn schedule_auto_apply(app: &AppHandle, state: &Arc<AppState>, champ: i64) {
             let _ = app.emit("toast", format!("{label}：{}", msgs.join("  ")));
         }
     });
+}
+
+pub const WINDOW_MODE_BORDERLESS: i64 = 2;
+
+/// 读取游戏显示模式（下次进游戏生效的设置）
+pub async fn read_window_mode(client: &LcuClient) -> Option<i64> {
+    client.get("/lol-game-settings/v1/game-settings").await.ok()?["General"]["WindowMode"].as_i64()
+}
+
+/// 把游戏显示模式改成无边框；与在客户端设置里手动修改等价，下次进游戏生效。
+pub async fn set_borderless(client: &LcuClient) -> anyhow::Result<i64> {
+    use reqwest::Method;
+    let body = serde_json::json!({ "General": { "WindowMode": WINDOW_MODE_BORDERLESS } });
+    client.request(Method::PATCH, "/lol-game-settings/v1/game-settings", Some(&body)).await?;
+    // 持久化到 game.cfg；部分客户端版本没有这个接口，失败不影响 PATCH 结果
+    let _ = client.request(Method::POST, "/lol-game-settings/v1/save", None).await;
+    let now = read_window_mode(client).await.unwrap_or(-1);
+    anyhow::ensure!(now == WINDOW_MODE_BORDERLESS, "写入后读回的值是 {now}，请在游戏内 Esc → 视频 → 窗口模式 手动确认");
+    Ok(now)
 }
 
 /// 读取客户端语言；数据语言为「跟随客户端」且与当前不同时重新同步

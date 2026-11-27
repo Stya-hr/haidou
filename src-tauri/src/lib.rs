@@ -110,6 +110,18 @@ async fn apply_build(app: AppHandle, state: S<'_>, champion_id: i64, what: Strin
     Ok(msgs.join("  "))
 }
 
+/// 把游戏显示模式改成无边框（下次进游戏生效）
+#[tauri::command]
+async fn set_borderless(app: AppHandle, state: S<'_>) -> Result<(), String> {
+    let c = state.lcu().ok_or("未连接客户端")?;
+    if state.phase() == "InProgress" {
+        return Err("对局中无法修改，请在游戏内 Esc → 视频 → 窗口模式 调整".into());
+    }
+    let mode = lcu::set_borderless(&c).await.map_err(|e| format!("{e:#}"))?;
+    state.update(&app, |s| s.window_mode = Some(mode));
+    Ok(())
+}
+
 /// 界面上显示某个英雄时按需加载其详情（出装、完整强化表）
 #[tauri::command]
 async fn ensure_champion(app: AppHandle, state: S<'_>, champion_id: i64) -> Result<(), String> {
@@ -219,6 +231,7 @@ pub fn run() {
             apply_build,
             ensure_champion,
             open_link,
+            set_borderless,
             ocr_scan_now
         ])
         .run(tauri::generate_context!())

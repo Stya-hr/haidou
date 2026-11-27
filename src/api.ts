@@ -17,6 +17,7 @@ export interface Snapshot {
   lastChampionId: number;
   liveLevel: number | null;
   liveDead: boolean;
+  windowMode: number | null;
   clientLocale: string | null;
   ocrLang: string | null;
   offer: OfferCard[];
@@ -74,6 +75,7 @@ export const api = {
   ensureChampion: (championId: number) => invoke<void>("ensure_champion", { championId }),
   openLink: (url: string) => invoke<void>("open_link", { url }),
   ocrScanNow: () => invoke<void>("ocr_scan_now"),
+  setBorderless: () => invoke<void>("set_borderless"),
 };
 
 export const MAYHEM_QUEUE = 2400;
@@ -113,6 +115,8 @@ export const championUrl = (cat: Catalog | null, c?: Champion) => {
   const t = cat?.stats?.attribution?.championUrl;
   return t && c ? t.replace("{alias}", c.alias.toLowerCase().replace(/[^a-z0-9]/g, "")) : undefined;
 };
+
+export const WINDOW_MODE_TEXT: Record<number, string> = { 0: "全屏", 1: "窗口", 2: "无边框" };
 
 export const PHASE_TEXT: Record<string, string> = {
   None: "空闲", Lobby: "房间中", Matchmaking: "匹配中", ReadyCheck: "找到对局",
