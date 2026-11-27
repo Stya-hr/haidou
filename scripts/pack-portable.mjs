@@ -1,7 +1,7 @@
-// 把 release 版 exe 打成 zip 便携包：dist-portable/hexpilot-v<版本>-win-x64.zip
+// 把 release 版 exe 打成 zip 便携包：dist-portable/hexpilot-v<版本>-win-x64-portable.zip
 // 包内结构：hexpilot/hexpilot.exe + hexpilot/使用说明.txt；首次运行会在旁边生成 hexpilot-data/（设置与缓存）
 import { execFileSync } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { appendFileSync, copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -29,7 +29,10 @@ writeFileSync(join(stage, "使用说明.txt"), `海克斯领航 v${conf.version}
 统计数据：Data: AramMeta (https://arammeta.com/?ref=hexpilot)，与 Riot Games 及 AramMeta 均无隶属关系。
 `, "utf8");
 
-const zip = join(out, `hexpilot-v${conf.version}-win-x64.zip`);
+const name = `hexpilot-v${conf.version}-win-x64-portable`;
+const zip = join(out, `${name}.zip`);
+// 在 GitHub Actions 里把包名传给后续步骤（Artifact 名称）
+if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `name=${name}\n`);
 execFileSync("powershell", ["-NoProfile", "-Command",
   `Compress-Archive -Path '${stage}' -DestinationPath '${zip}' -Force`], { stdio: "inherit" });
 console.log(`已生成 ${zip}`);

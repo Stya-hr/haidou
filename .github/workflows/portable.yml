@@ -20,12 +20,13 @@ jobs:
         with: { workspaces: src-tauri }
       - run: pnpm install --frozen-lockfile
       - run: cargo test --manifest-path src-tauri/Cargo.toml
-      - run: pnpm portable
+      - id: pack
+        run: pnpm portable
       # Artifact 下载时 GitHub 会自动再打一层 zip，所以这里上传解压后的文件夹，
       # 避免出现 zip 套 zip；Release 里附的才是我们自己打的 zip
       - uses: actions/upload-artifact@v4
         with:
-          name: hexpilot-win-x64
+          name: ${{ steps.pack.outputs.name }}
           path: dist-portable/hexpilot/
       # 推送 v* 标签时自动发布 Release
       - if: startsWith(github.ref, 'refs/tags/v')
