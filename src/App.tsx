@@ -41,12 +41,6 @@ export default function App() {
 
   createEffect(() => { document.documentElement.lang = lang(); });
 
-  // 阶段切换时自动跳到对应页面
-  createEffect(on(() => snap().phase, (p) => {
-    if (p === "ChampSelect") setTab("select");
-    else if (p === "InProgress" || p === "GameStart") setTab("augments");
-  }));
-
   const ctx = createMemo<Ctx>(() => {
     const c = cat();
     return {
