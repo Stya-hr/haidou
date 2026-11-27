@@ -63,8 +63,8 @@ fn archetype_tier(lift: f64) -> &'static str {
         l if l >= 0.02 => "S+",
         l if l >= 0.01 => "S",
         l if l >= 0.003 => "A",
-        l if l >= -0.003 => "B",
-        l if l >= -0.01 => "C",
+        l if l >= -0.008 => "B",
+        l if l >= -0.02 => "C",
         _ => "D",
     }
 }

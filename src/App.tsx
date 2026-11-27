@@ -18,7 +18,7 @@ const rarityText = (r: string) => t((["silver", "gold", "prismatic"].includes(r)
 export default function App() {
   const [snap, setSnap] = createSignal<Snapshot>(EMPTY);
   const [cat, setCat] = createSignal<Catalog | null>(null);
-  const [tab, setTab] = createSignal<Tab>("select");
+  const [tab, setTab] = createSignal<Tab>((new URLSearchParams(location.search).get("tab") as Tab) || "select");
   const [toast, setToast] = createSignal("");
   let toastTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -63,20 +63,22 @@ export default function App() {
   return (
     <div class="app">
       <header>
-        <span class={`dot ${snap().connected ? "on" : ""}`} />
-        <span>{snap().connected ? phaseText(snap().phase) : t("waiting")}</span>
-        <Show when={snap().queueId}>
-          <span class={`queue ${snap().queueId === MAYHEM_QUEUE ? "mayhem" : ""}`}>
-            {snap().queueId === MAYHEM_QUEUE ? t("mayhem") : t("queue", { q: snap().queueId! })}
-          </span>
-        </Show>
-        <Show when={snap().liveLevel}>
-          <span class="lvl">Lv.{snap().liveLevel}{snap().liveDead ? ` · ${t("dead")}` : ""}</span>
-        </Show>
-        <span class="patch">{cat()?.patch ? `v${cat()!.patch}` : ""}</span>
+        <div class="brand"><img src="/icon.png" alt="" /><span>HexPilot</span></div>
+        <div class="status">
+          <span class="pill"><span class={`dot ${snap().connected ? "on" : ""}`} />{snap().connected ? phaseText(snap().phase) : t("waiting")}</span>
+          <Show when={snap().queueId}>
+            <span class="pill" classList={{ mayhem: snap().queueId === MAYHEM_QUEUE }}>
+              {snap().queueId === MAYHEM_QUEUE ? t("mayhem") : t("queue", { q: snap().queueId! })}
+            </span>
+          </Show>
+          <Show when={snap().liveLevel}>
+            <span class="pill lvl" classList={{ dead: snap().liveDead }}>Lv.{snap().liveLevel}{snap().liveDead ? ` · ${t("dead")}` : ""}</span>
+          </Show>
+          <Show when={!snap().queueId && cat()?.patch}><span class="pill">v{cat()!.patch}</span></Show>
+        </div>
+        <SyncLine sync={snap().sync} />
       </header>
-
-      <SyncBar sync={snap().sync} />
+      <Show when={snap().sync}><div class="synctext">{syncLabel(snap().sync!)}</div></Show>
 
       <nav>
         <button classList={{ active: tab() === "select" }} onClick={() => setTab("select")}>{t("tab_select")}</button>
@@ -95,24 +97,22 @@ export default function App() {
   );
 }
 
-/** 数据同步进度条：检查 → 下载游戏数据 n/m → 统计数据；同步结束后消失 */
-function SyncBar(p: { sync: Snapshot["sync"] }) {
-  const pctDone = () => {
+const syncLabel = (s: NonNullable<Snapshot["sync"]>) =>
+  s.stage === "static" ? t("sync_static", { done: s.done, total: s.total })
+    : s.stage === "stats" ? t("sync_stats") : t("sync_checking");
+
+/** 数据同步进度：顶栏底部细线（检查 → 下载游戏数据 n/m → 统计数据），结束后消失 */
+function SyncLine(p: { sync: Snapshot["sync"] }) {
+  const width = () => {
     const s = p.sync!;
-    if (s.stage === "checking") return 8;
-    if (s.stage === "static") return 10 + (75 * s.done) / Math.max(1, s.total);
-    return 90;
-  };
-  const label = () => {
-    const s = p.sync!;
-    return s.stage === "static" ? t("sync_static", { done: s.done, total: s.total })
-      : s.stage === "stats" ? t("sync_stats") : t("sync_checking");
+    if (s.stage === "checking") return 12;
+    if (s.stage === "static") return 15 + (70 * s.done) / Math.max(1, s.total);
+    return 92;
   };
   return (
     <Show when={p.sync}>
-      <div class="syncbar" classList={{ indeterminate: p.sync!.stage !== "static" }}>
-        <div class="fill" style={{ width: `${pctDone()}%` }} />
-        <span>{label()}</span>
+      <div class="syncline" classList={{ indeterminate: p.sync!.stage !== "static" }}>
+        <div class="fill" style={{ width: `${width()}%` }} />
       </div>
     </Show>
   );
@@ -280,7 +280,7 @@ function AugRow(p: { a?: Augment; tier?: string; pickRate?: number | null; scope
       <div class={`aug r-${p.a!.rarity}`}>
         <img src={p.a!.icon} alt="" loading="lazy" />
         <span class="name">{p.a!.name}</span>
-        <span class="muted">{rarityText(p.a!.rarity)}</span>
+        <span class="rar">{rarityText(p.a!.rarity)}</span>
         <Show when={p.pickRate != null}>
           <span class="stat" title={p.scope === "global" ? t("pick_global_tip") : t("pick_champ_tip")}>
             {t("pick_rate")} <b>{pct(p.pickRate)}</b>
@@ -350,14 +350,15 @@ function SelectView(p: { snap: Snapshot; x: Ctx }) {
 
   return (
     <Show when={cs()} fallback={<>
-      <div class="empty">{p.snap.connected ? t("wait_champ_select") : t("start_client")}</div>
-      <WindowModeHint snap={p.snap} notify={p.x.notify} />
+      <section>
+        <div class="empty">{p.snap.connected ? t("wait_champ_select") : t("start_client")}</div>
+        <WindowModeHint snap={p.snap} notify={p.x.notify} />
+      </section>
       <TierList x={p.x} />
     </>}>
-      <Show when={!p.x.cat?.stats}><div class="hint">{t("stats_not_loaded_hint")}</div></Show>
-      <WindowModeHint snap={p.snap} notify={p.x.notify} />
-
       <section>
+        <Show when={!p.x.cat?.stats}><div class="hint">{t("stats_not_loaded_hint")}</div></Show>
+        <WindowModeHint snap={p.snap} notify={p.x.notify} />
         <h3>{t("my_champ")}
           <Show when={cs()!.rerollsRemaining > 0}>
             <button class="small right" onClick={reroll}>{t("reroll", { n: cs()!.rerollsRemaining })}</button>
@@ -432,8 +433,8 @@ function AugmentView(p: { snap: Snapshot; x: Ctx }) {
             {p.snap.phase === "InProgress" ? t("offer_hint_ingame") : t("offer_hint_idle")}
           </div>}>
             {(o) => {
-              const i = augInfo(p.x.cat, champId(), o.augmentId);
-              return <AugRow a={p.x.augs.get(o.augmentId)} tier={i.tier} pickRate={i.pickRate} scope={i.scope} />;
+              const i = () => augInfo(p.x.cat, champId(), o.augmentId);
+              return <AugRow a={p.x.augs.get(o.augmentId)} tier={i().tier} pickRate={i().pickRate} scope={i().scope} />;
             }}
           </For>
         </div>
@@ -524,7 +525,7 @@ function SettingsView(p: { snap: Snapshot; cat: Catalog | null; notify: (m: stri
     setBusy(false);
   };
   const check = (k: "autoAccept" | "alwaysOnTop" | "autoItems" | "autoSpells" | "ocrEnabled" | "overlayEnabled" | "autoUpdate", key: Key) => (
-    <label class="row"><input type="checkbox" checked={s()![k]} onChange={(e) => patch(k, e.currentTarget.checked)} />{t(key)}</label>
+    <label class="toggle"><span>{t(key)}</span><input type="checkbox" checked={s()![k]} onChange={(e) => patch(k, e.currentTarget.checked)} /></label>
   );
   const text = (k: TextKey, key: Key, ph = "") => (
     <label>{t(key)}
@@ -535,8 +536,9 @@ function SettingsView(p: { snap: Snapshot; cat: Catalog | null; notify: (m: stri
 
   return (
     <Show when={s()}>
+      <Show when={saved()}><div class="saved-float">✓ {t("s_saved")}</div></Show>
       <section class="form">
-        <h3>{t("s_ui")}<Show when={saved()}><span class="saved right">✓ {t("s_saved")}</span></Show></h3>
+        <h3>{t("s_ui")}</h3>
         <label>{t("s_ui_lang")}
           <select value={s()!.uiLang} onChange={(e) => patch("uiLang", e.currentTarget.value)}>
             <option value="auto">{t("s_ui_auto")}</option>
@@ -544,16 +546,21 @@ function SettingsView(p: { snap: Snapshot; cat: Catalog | null; notify: (m: stri
           </select>
         </label>
         {check("alwaysOnTop", "s_on_top")}
+      </section>
 
+      <section class="form">
         <h3>{t("s_game")}</h3>
         {check("autoAccept", "s_auto_accept")}
         {text("acceptDelayMs", "s_accept_delay")}
-        <div class="row gap">
-          <span class="muted">{t("s_auto_when")}</span>
+        <div class="subgroup">
+          <span class="caption">{t("s_auto_when")}</span>
           {check("autoItems", "s_auto_items")}
           {check("autoSpells", "s_auto_spells")}
         </div>
 
+      </section>
+
+      <section class="form">
         <h3>{t("s_ocr")}</h3>
         <WindowModeHint snap={p.snap} notify={p.notify} always />
         {check("ocrEnabled", "s_ocr_enabled")}
@@ -568,6 +575,9 @@ function SettingsView(p: { snap: Snapshot; cat: Catalog | null; notify: (m: stri
         </label>
         {text("ocrHotkey", "s_hotkey", "Ctrl+Shift+A")}
 
+      </section>
+
+      <section class="form">
         <h3>{t("s_data")}</h3>
         <label>{t("s_source")}
           <select value={s()!.statsSource} onChange={(e) => patch("statsSource", e.currentTarget.value)}>
@@ -581,7 +591,7 @@ function SettingsView(p: { snap: Snapshot; cat: Catalog | null; notify: (m: stri
         {text("leagueDir", "s_league_dir", "C:\\Riot Games\\League of Legends")}
 
         <div class="row gap">
-          <button onClick={refresh} disabled={busy()}>{busy() ? t("s_refreshing") : t("s_refresh")}</button>
+          <button class="primary" onClick={refresh} disabled={busy()}>{busy() ? t("s_refreshing") : t("s_refresh")}</button>
         </div>
         <div class="muted foot">
           {t("s_checked")}：{ago(p.cat?.checkedAt ?? 0)} · {t("s_client_lang")}：{p.snap.clientLocale ?? "?"} · {t("s_data_lang")}：{p.cat?.locale ?? "?"}

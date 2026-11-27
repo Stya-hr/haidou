@@ -56,10 +56,10 @@ const D = {
   import_items: ["导入出装", "匯入出裝", "Import items"],
   import_items_tip: ["写入客户端装备方案，游戏内商店可直接使用", "寫入用戶端裝備方案，遊戲內商店可直接使用", "Writes a client item set usable in the in-game shop"],
   boots: ["鞋子", "鞋子", "Boots"],
-  situational: ["可选", "可選", "Situational"],
+  situational: ["可选", "可選", "Extra"],
   spells: ["技能", "技能", "Spells"],
   set_spells: ["设置技能", "設定技能", "Set spells"],
-  aug_styles: ["强化", "強化", "Augments"],
+  aug_styles: ["强化", "強化", "Style"],
   // 强化
   pick_global_tip: ["全体玩家选取率", "全體玩家選取率", "Pick rate across all players"],
   pick_champ_tip: ["该英雄选取率", "該英雄選取率", "Pick rate on this champion"],
