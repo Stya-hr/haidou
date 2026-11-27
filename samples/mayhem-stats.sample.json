@@ -1,0 +1,149 @@
+{
+  "schema": 1,
+  "patch": "16.23",
+  "source": "示例数据（非真实统计，仅用于演示格式）",
+  "updatedAt": "2026-11-27",
+  "champions": {
+    "103": {
+      "tier": "S",
+      "score": 72,
+      "winRate": 0.534,
+      "pickRate": 0.081,
+      "augments": [
+        {
+          "id": 1205,
+          "tier": "S"
+        },
+        {
+          "id": 1141,
+          "tier": "A"
+        },
+        {
+          "id": 1002,
+          "tier": "B"
+        }
+      ],
+      "spells": [
+        4,
+        32
+      ],
+      "items": {
+        "start": [
+          1082,
+          2003
+        ],
+        "boots": [
+          3020
+        ],
+        "core": [
+          6655,
+          4645,
+          3089
+        ],
+        "situational": [
+          3135,
+          3157
+        ]
+      },
+      "note": "示例：远程消耗型法师，优先选择技能伤害类强化。",
+      "archetypes": [
+        {
+          "name": "AP爆发",
+          "tier": "S",
+          "core": [
+            6655,
+            4645
+          ],
+          "options": [
+            3089,
+            3135
+          ],
+          "winRate": 0.522,
+          "pickRate": 0.384
+        }
+      ],
+      "augStyles": [
+        {
+          "name": "远程法术型",
+          "pickRate": 0.21
+        }
+      ]
+    },
+    "81": {
+      "tier": "A",
+      "score": 63,
+      "winRate": 0.511,
+      "augments": [
+        {
+          "id": 2087,
+          "tier": "S"
+        },
+        {
+          "id": 1004,
+          "tier": "A"
+        }
+      ],
+      "spells": [
+        4,
+        7
+      ],
+      "items": {
+        "start": [
+          1036,
+          2003
+        ],
+        "boots": [
+          3158
+        ],
+        "core": [
+          3070,
+          3078,
+          6694
+        ],
+        "situational": []
+      }
+    },
+    "99": {
+      "tier": "B",
+      "score": 55
+    },
+    "22": {
+      "tier": "C",
+      "score": 45
+    }
+  },
+  "augments": {
+    "1205": {
+      "tier": "S",
+      "pickRate": 0.21
+    },
+    "1141": {
+      "tier": "A",
+      "pickRate": 0.15
+    },
+    "1002": {
+      "tier": "B",
+      "pickRate": 0.08
+    },
+    "2087": {
+      "tier": "A",
+      "pickRate": 0.12
+    },
+    "1004": {
+      "tier": "S",
+      "pickRate": 0.3
+    },
+    "2103": {
+      "tier": "C",
+      "pickRate": 0.04
+    },
+    "1180": {
+      "tier": "B",
+      "pickRate": 0.06
+    },
+    "1006": {
+      "tier": "A",
+      "pickRate": 0.11
+    }
+  }
+}
