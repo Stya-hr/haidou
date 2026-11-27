@@ -318,9 +318,21 @@ pub fn effective_locale(_state: &AppState) -> String {
     crate::i18n::data_locale(crate::i18n::get()).to_string()
 }
 
-/// 启动时调用：先用缓存秒开，再后台检查版本更新。
+fn progress(app: &AppHandle, state: &AppState, stage: &'static str, done: u32, total: u32) {
+    state.update(app, |s| s.sync = Some(crate::state::SyncProgress { stage, done, total }));
+}
+
+/// 启动时调用：先用缓存秒开，再后台检查版本更新。结束时（成功或失败）清除进度。
 pub async fn sync(app: AppHandle, state: Arc<AppState>, force: bool) -> Result<()> {
     let _guard = state.sync_lock.lock().await;
+    let r = sync_inner(&app, &state, force).await;
+    state.update(&app, |s| s.sync = None);
+    r
+}
+
+async fn sync_inner(app: &AppHandle, state: &Arc<AppState>, force: bool) -> Result<()> {
+    let (app, state) = (app.clone(), state.clone());
+    progress(&app, &state, "checking", 0, 0);
     let (base, source, custom_url) = {
         let s = state.settings.read().unwrap();
         (s.cdragon_base.trim_end_matches('/').to_string(), s.stats_source.clone(), s.stats_url.clone())
@@ -354,16 +366,32 @@ pub async fn sync(app: AppHandle, state: Arc<AppState>, force: bool) -> Result<(
             let r = root(&locale);
             let urls = ["champion-summary", "cherry-augments", "items", "summoner-spells"]
                 .map(|n| format!("{r}/{n}.json"));
+            let alt: Vec<&str> = OCR_NAME_LOCALES.iter().copied().filter(|l| *l != locale).collect();
+            let total = (urls.len() + alt.len()) as u32;
+            let done = std::sync::atomic::AtomicU32::new(0);
+            let step = || {
+                let n = done.fetch_add(1, std::sync::atomic::Ordering::SeqCst) + 1;
+                progress(&app, &state, "static", n, total);
+            };
+            progress(&app, &state, "static", 0, total);
+            let fetch_step = |url: &str| {
+                let (http, step, url) = (&http, &step, url.to_string());
+                async move {
+                    let r = fetch_json(http, &url).await;
+                    step();
+                    r
+                }
+            };
             let (champs, augs, items, spells) = tokio::try_join!(
-                fetch_json(&http, &urls[0]),
-                fetch_json(&http, &urls[1]),
-                fetch_json(&http, &urls[2]),
-                fetch_json(&http, &urls[3]),
+                fetch_step(&urls[0]),
+                fetch_step(&urls[1]),
+                fetch_step(&urls[2]),
+                fetch_step(&urls[3]),
             )?;
             let mut augments = build_augments(&base, &augs);
-            for l in OCR_NAME_LOCALES.iter().filter(|l| **l != locale) {
+            for l in alt {
                 // 备用语言拉取失败不影响主流程
-                if let Ok(v) = fetch_json(&http, &format!("{}/cherry-augments.json", root(l))).await {
+                if let Ok(v) = fetch_step(&format!("{}/cherry-augments.json", root(l))).await {
                     merge_alt_names(&mut augments, &v);
                 }
             }
@@ -381,6 +409,7 @@ pub async fn sync(app: AppHandle, state: Arc<AppState>, force: bool) -> Result<(
         }
     };
 
+    progress(&app, &state, "stats", 0, 0);
     let stats = match source.as_str() {
         "custom" if !custom_url.trim().is_empty() => load_custom(&http, custom_url.trim()).await.map(Some),
         "custom" => Ok(None),

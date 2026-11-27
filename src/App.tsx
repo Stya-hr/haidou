@@ -10,7 +10,7 @@ type Tab = "select" | "augments" | "settings";
 
 const EMPTY: Snapshot = {
   connected: false, phase: "None", queueId: null, champSelect: null, lastChampionId: 0,
-  liveLevel: null, liveDead: false, windowMode: null, clientLocale: null, ocrLang: null, offer: [], ocrError: null,
+  liveLevel: null, liveDead: false, windowMode: null, clientLocale: null, ocrLang: null, offer: [], ocrError: null, sync: null,
 };
 
 const rarityText = (r: string) => t((["silver", "gold", "prismatic"].includes(r) ? r : "other") as Key);
@@ -76,6 +76,8 @@ export default function App() {
         <span class="patch">{cat()?.patch ? `v${cat()!.patch}` : ""}</span>
       </header>
 
+      <SyncBar sync={snap().sync} />
+
       <nav>
         <button classList={{ active: tab() === "select" }} onClick={() => setTab("select")}>{t("tab_select")}</button>
         <button classList={{ active: tab() === "augments" }} onClick={() => setTab("augments")}>{t("tab_augments")}</button>
@@ -90,6 +92,29 @@ export default function App() {
 
       <Show when={toast()}><div class="toast">{toast()}</div></Show>
     </div>
+  );
+}
+
+/** 数据同步进度条：检查 → 下载游戏数据 n/m → 统计数据；同步结束后消失 */
+function SyncBar(p: { sync: Snapshot["sync"] }) {
+  const pctDone = () => {
+    const s = p.sync!;
+    if (s.stage === "checking") return 8;
+    if (s.stage === "static") return 10 + (75 * s.done) / Math.max(1, s.total);
+    return 90;
+  };
+  const label = () => {
+    const s = p.sync!;
+    return s.stage === "static" ? t("sync_static", { done: s.done, total: s.total })
+      : s.stage === "stats" ? t("sync_stats") : t("sync_checking");
+  };
+  return (
+    <Show when={p.sync}>
+      <div class="syncbar" classList={{ indeterminate: p.sync!.stage !== "static" }}>
+        <div class="fill" style={{ width: `${pctDone()}%` }} />
+        <span>{label()}</span>
+      </div>
+    </Show>
   );
 }
 

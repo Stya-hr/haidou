@@ -22,6 +22,7 @@ export interface Snapshot {
   ocrLang: string | null;
   offer: OfferCard[];
   ocrError: string | null;
+  sync: { stage: "checking" | "static" | "stats"; done: number; total: number } | null;
 }
 
 export interface Champion { id: number; name: string; title: string; alias: string; icon: string }

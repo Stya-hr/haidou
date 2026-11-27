@@ -26,6 +26,15 @@ pub struct ChampSelectView {
     pub rerolls_remaining: i64,
 }
 
+/// 数据同步进度：stage = checking | static | stats
+#[derive(Serialize, Clone, PartialEq, Default, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct SyncProgress {
+    pub stage: &'static str,
+    pub done: u32,
+    pub total: u32,
+}
+
 /// 推给前端的完整状态，体积很小；只有内容变化时才推送。
 #[derive(Serialize, Clone, PartialEq, Default, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -47,6 +56,8 @@ pub struct Snapshot {
     /// OCR 识别到的当前强化卡片
     pub offer: Vec<crate::ocr::OfferCard>,
     pub ocr_error: Option<String>,
+    /// 正在同步数据时有值
+    pub sync: Option<SyncProgress>,
 }
 
 #[derive(Default)]
