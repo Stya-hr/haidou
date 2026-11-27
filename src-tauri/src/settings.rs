@@ -16,8 +16,8 @@ pub struct Settings {
     pub stats_url: String,
     /// CommunityDragon 根地址，网络不通时可换成镜像。
     pub cdragon_base: String,
-    /// 数据语言："auto"（跟随客户端）或 CommunityDragon 语言目录，如 zh_tw / zh_my / zh_cn / default
-    pub locale: String,
+    /// 界面语言："auto"（跟随系统）| "zh-Hans" | "zh-Hant" | "en"；数据语言随之变化
+    pub ui_lang: String,
     /// 大乱斗禁用符文，所以只有出装和召唤师技能
     pub auto_items: bool,
     pub auto_spells: bool,
@@ -40,7 +40,7 @@ impl Default for Settings {
             stats_source: "arammeta".into(),
             stats_url: String::new(),
             cdragon_base: "https://raw.communitydragon.org".into(),
-            locale: "auto".into(),
+            ui_lang: "auto".into(),
             auto_items: true,
             auto_spells: false,
             ocr_enabled: true,
@@ -65,16 +65,6 @@ pub fn save(app: &AppHandle, s: &Settings) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// 客户端语言（如 "zh_TW"）→ CommunityDragon 目录名
-pub fn cdragon_locale(client_locale: &str) -> String {
-    let l = client_locale.to_lowercase();
-    match l.as_str() {
-        "" => "default".into(),
-        "en_us" => "default".into(),
-        _ => l,
-    }
-}
-
 /// OCR 引擎优先级列表（BCP-47 标签）。中文环境下两种字形都列上，识别时轮换并锁定命中的引擎。
 pub fn ocr_langs(setting: &str, client_locale: Option<&str>) -> Vec<String> {
     let both_zh = |first: &str| {
@@ -83,12 +73,17 @@ pub fn ocr_langs(setting: &str, client_locale: Option<&str>) -> Vec<String> {
     };
     match setting {
         "zh-Hans" | "zh-Hant" => both_zh(setting),
-        "auto" | "" => match client_locale.map(str::to_lowercase).as_deref() {
-            Some("zh_tw" | "zh_hk") => both_zh("zh-Hant"),
-            Some("zh_cn" | "zh_my" | "zh_sg") => both_zh("zh-Hans"),
-            Some(l) if !l.is_empty() => vec![l.replace('_', "-")],
-            // 还不知道客户端语言：简繁都试
-            _ => both_zh("zh-Hans"),
+        // 游戏画面的语言由客户端决定；客户端语言未知时按界面语言猜
+        "auto" | "" => match client_locale
+            .map(str::to_string)
+            .unwrap_or_else(|| crate::i18n::ocr_tag(crate::i18n::get()).to_string())
+            .to_lowercase()
+            .as_str()
+        {
+            "zh_tw" | "zh_hk" => both_zh("zh-Hant"),
+            "zh_cn" | "zh_my" | "zh_sg" => both_zh("zh-Hans"),
+            "" => both_zh("zh-Hans"),
+            l => vec![l.replace('_', "-")],
         },
         other => vec![other.to_string()],
     }
@@ -100,11 +95,8 @@ mod tests {
 
     #[test]
     fn locales() {
-        assert_eq!(cdragon_locale("en_US"), "default");
-        assert_eq!(cdragon_locale("zh_TW"), "zh_tw");
         assert_eq!(ocr_langs("auto", Some("zh_TW")), vec!["zh-Hant", "zh-Hans"]);
         assert_eq!(ocr_langs("auto", Some("zh_MY")), vec!["zh-Hans", "zh-Hant"]);
-        assert_eq!(ocr_langs("auto", None), vec!["zh-Hans", "zh-Hant"]);
         assert_eq!(ocr_langs("auto", Some("en_GB")), vec!["en-gb"]);
         assert_eq!(ocr_langs("en-US", Some("zh_TW")), vec!["en-US"]);
     }

@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="gold" x1="0.15" y1="0" x2="0.85" y2="1">
+      <stop offset="0" stop-color="#fbe7a6"/>
+      <stop offset="0.45" stop-color="#d4aa55"/>
+      <stop offset="1" stop-color="#7d5a1f"/>
+    </linearGradient>
+    <linearGradient id="goldEdge" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff3c4"/>
+      <stop offset="1" stop-color="#a07a32"/>
+    </linearGradient>
+    <radialGradient id="field" cx="0.5" cy="0.42" r="0.62">
+      <stop offset="0" stop-color="#1d3340"/>
+      <stop offset="0.7" stop-color="#0f1a22"/>
+      <stop offset="1" stop-color="#080d12"/>
+    </radialGradient>
+    <linearGradient id="tealA" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#b6f6ff"/>
+      <stop offset="1" stop-color="#36b7c6"/>
+    </linearGradient>
+    <linearGradient id="tealB" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4fc9d6"/>
+      <stop offset="1" stop-color="#1b6e78"/>
+    </linearGradient>
+    <radialGradient id="core" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.45" stop-color="#9ff3ff"/>
+      <stop offset="1" stop-color="#2aa6b6" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="18"/>
+    </filter>
+  </defs>
+
+  <!-- 外框：圆角六边形（尖顶朝上） -->
+  <path d="M512 40 Q540 40 566 55 L888 241 Q936 268 936 324 L936 700 Q936 756 888 783 L566 969 Q540 984 512 984 Q484 984 458 969 L136 783 Q88 756 88 700 L88 324 Q88 268 136 241 L458 55 Q484 40 512 40Z" fill="url(#gold)"/>
+  <path d="M512 84 Q533 84 552 95 L860 273 Q894 293 894 333 L894 691 Q894 731 860 751 L552 929 Q533 940 512 940 Q491 940 472 929 L164 751 Q130 731 130 691 L130 333 Q130 293 164 273 L472 95 Q491 84 512 84Z" fill="url(#goldEdge)" opacity="0.35"/>
+  <!-- 内场 -->
+  <path d="M512 118 L866 322 L866 702 L512 906 L158 702 L158 322Z" fill="url(#field)"/>
+  <!-- 内圈刻度六边形 -->
+  <path d="M512 214 L770 363 L770 661 L512 810 L254 661 L254 363Z" fill="none" stroke="#d4aa55" stroke-opacity="0.35" stroke-width="10"/>
+
+  <!-- 领航指针（指向右上，双色菱形） -->
+  <g transform="rotate(35 512 512)">
+    <path d="M512 176 L612 512 L512 512Z" fill="url(#tealA)"/>
+    <path d="M512 176 L412 512 L512 512Z" fill="url(#tealB)"/>
+    <path d="M512 848 L612 512 L512 512Z" fill="#c9a24c"/>
+    <path d="M512 848 L412 512 L512 512Z" fill="#8a6a2b"/>
+  </g>
+
+  <!-- 晶核 -->
+  <circle cx="512" cy="512" r="92" fill="#4fd8e6" opacity="0.55" filter="url(#glow)"/>
+  <circle cx="512" cy="512" r="64" fill="#0b1218" stroke="url(#gold)" stroke-width="16"/>
+  <circle cx="512" cy="512" r="40" fill="url(#core)"/>
+</svg>

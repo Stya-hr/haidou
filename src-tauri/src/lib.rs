@@ -1,6 +1,7 @@
 mod apply;
 mod arammeta;
 mod data;
+mod i18n;
 mod lcu;
 mod live;
 mod ocr;
@@ -11,7 +12,7 @@ mod state;
 use settings::Settings;
 use state::{AppState, Snapshot};
 use std::sync::Arc;
-use tauri::{AppHandle, Manager, State, WebviewUrl, WebviewWindowBuilder};
+use tauri::{AppHandle, Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder};
 use tauri_plugin_opener::OpenerExt;
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 
@@ -27,6 +28,12 @@ fn get_catalog(state: S) -> Option<data::Catalog> {
     state.catalog.read().unwrap().as_deref().cloned()
 }
 
+/// 实际生效的界面语言（"auto" 已按系统语言解析）
+#[tauri::command]
+fn get_ui_lang() -> &'static str {
+    i18n::code(i18n::get())
+}
+
 #[tauri::command]
 fn get_settings(state: S) -> Settings {
     state.settings.read().unwrap().clone()
@@ -38,9 +45,11 @@ async fn save_settings(app: AppHandle, state: S<'_>, settings: Settings) -> Resu
         settings
             .ocr_hotkey
             .parse::<tauri_plugin_global_shortcut::Shortcut>()
-            .map_err(|e| format!("热键格式不正确：{e}"))?;
+            .map_err(|e| format!("{}: {e}", i18n::t("bad_hotkey")))?;
     }
     settings::save(&app, &settings).map_err(|e| e.to_string())?;
+    i18n::set(i18n::resolve(&settings.ui_lang));
+    let _ = app.emit("ui-lang", i18n::code(i18n::get()));
     let old = std::mem::replace(&mut *state.settings.write().unwrap(), settings.clone());
     if let Some(w) = app.get_webview_window("main") {
         let _ = w.set_always_on_top(settings.always_on_top);
@@ -51,7 +60,7 @@ async fn save_settings(app: AppHandle, state: S<'_>, settings: Settings) -> Resu
     let data_changed = old.stats_url != settings.stats_url
         || old.stats_source != settings.stats_source
         || old.cdragon_base != settings.cdragon_base
-        || old.locale != settings.locale;
+        || old.ui_lang != settings.ui_lang;
     if data_changed {
         let st = state.inner().clone();
         tauri::async_runtime::spawn(async move {
@@ -73,7 +82,7 @@ async fn refresh_data(app: AppHandle, state: S<'_>) -> Result<(), String> {
 /// 以下操作都由玩家点击按钮触发，等同于在客户端里手动操作。
 #[tauri::command]
 async fn bench_swap(state: S<'_>, champion_id: i64) -> Result<(), String> {
-    let c = state.lcu().ok_or("未连接客户端")?;
+    let c = state.lcu().ok_or(i18n::t("not_connected"))?;
     c.post(&format!("/lol-champ-select/v1/session/bench/swap/{champion_id}"))
         .await
         .map_err(|e| e.to_string())
@@ -81,7 +90,7 @@ async fn bench_swap(state: S<'_>, champion_id: i64) -> Result<(), String> {
 
 #[tauri::command]
 async fn reroll(state: S<'_>) -> Result<(), String> {
-    let c = state.lcu().ok_or("未连接客户端")?;
+    let c = state.lcu().ok_or(i18n::t("not_connected"))?;
     c.post("/lol-champ-select/v1/session/my-selection/reroll")
         .await
         .map_err(|e| e.to_string())
@@ -90,14 +99,14 @@ async fn reroll(state: S<'_>) -> Result<(), String> {
 /// what: "items" | "spells" | "all"
 #[tauri::command]
 async fn apply_build(app: AppHandle, state: S<'_>, champion_id: i64, what: String) -> Result<String, String> {
-    let client = state.lcu().ok_or("未连接客户端")?;
+    let client = state.lcu().ok_or(i18n::t("not_connected"))?;
     data::ensure_detail(&app, state.inner(), champion_id).await.map_err(|e| format!("{e:#}"))?;
-    let cat = state.catalog.read().unwrap().clone().ok_or("数据尚未加载")?;
+    let cat = state.catalog.read().unwrap().clone().ok_or(i18n::t("data_not_loaded"))?;
     let st = cat
         .stats
         .as_ref()
         .and_then(|s| s.champions.get(&champion_id.to_string()))
-        .ok_or("数据包中没有该英雄")?;
+        .ok_or(i18n::t("no_champ_data"))?;
     let all = what == "all";
     let which = apply::Which {
         items: all || what == "items",
@@ -105,7 +114,7 @@ async fn apply_build(app: AppHandle, state: S<'_>, champion_id: i64, what: Strin
     };
     let msgs = apply::apply_all(&client, &cat, champion_id, st, which).await;
     if msgs.is_empty() {
-        return Err("数据包中没有可导入的内容".into());
+        return Err(i18n::t("nothing_to_import").into());
     }
     Ok(msgs.join("  "))
 }
@@ -113,9 +122,9 @@ async fn apply_build(app: AppHandle, state: S<'_>, champion_id: i64, what: Strin
 /// 把游戏显示模式改成无边框（下次进游戏生效）
 #[tauri::command]
 async fn set_borderless(app: AppHandle, state: S<'_>) -> Result<(), String> {
-    let c = state.lcu().ok_or("未连接客户端")?;
+    let c = state.lcu().ok_or(i18n::t("not_connected"))?;
     if state.phase() == "InProgress" {
-        return Err("对局中无法修改，请在游戏内 Esc → 视频 → 窗口模式 调整".into());
+        return Err(i18n::t("in_game_no_change").into());
     }
     let mode = lcu::set_borderless(&c).await.map_err(|e| format!("{e:#}"))?;
     state.update(&app, |s| s.window_mode = Some(mode));
@@ -134,7 +143,7 @@ async fn ensure_champion(app: AppHandle, state: S<'_>, champion_id: i64) -> Resu
 #[tauri::command]
 fn open_link(app: AppHandle, url: String) -> Result<(), String> {
     if !url.starts_with(&format!("{}/", arammeta::SITE)) {
-        return Err("不允许打开该链接".into());
+        return Err(i18n::t("link_denied").into());
     }
     app.opener().open_url(url, None::<&str>).map_err(|e| e.to_string())
 }
@@ -168,6 +177,7 @@ pub fn run() {
         .setup(|app| {
             let state = Arc::new(AppState::default());
             let s = settings::load(app.handle());
+            i18n::set(i18n::resolve(&s.ui_lang));
 
             // 便携版：WebView2 用户数据也放在 exe 旁边
             let webview_dir = paths::data_dir(app.handle()).join("webview");
@@ -224,6 +234,7 @@ pub fn run() {
             get_snapshot,
             get_catalog,
             get_settings,
+            get_ui_lang,
             save_settings,
             refresh_data,
             bench_swap,

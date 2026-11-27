@@ -128,7 +128,7 @@ fn aug_list(v: &Value) -> Vec<ChampAug> {
 }
 
 pub fn convert_index(v: &Value) -> Result<StatsPack> {
-    let champs = v["champs"].as_object().context("arammeta 数据格式已变化：缺少 champs")?;
+    let champs = v["champs"].as_object().context("AramMeta: unexpected format (missing champs)")?;
     let mut ranked: Vec<(&String, &Value, f64)> = champs
         .iter()
         .filter_map(|(id, c)| Some((id, c, c["wr"].as_f64()?)))
@@ -251,8 +251,12 @@ pub fn convert_detail(v: &Value, base: &ChampStats) -> ChampStats {
                 .filter(|id| !core.contains(id))
                 .take(4)
                 .collect();
+            let zh = g["name_zh"].as_str().unwrap_or_default();
+            let en = g["name_en"].as_str().unwrap_or_default();
             Archetype {
-                name: g["name_zh"].as_str().or_else(|| g["name_en"].as_str()).unwrap_or("流派").to_string(),
+                name: if zh.is_empty() { en.to_string() } else { zh.to_string() },
+                name_hans: crate::i18n::to_simplified(zh),
+                name_en: en.to_string(),
                 tier: archetype_tier(g["lift"].as_f64().unwrap_or(0.0)).into(),
                 core,
                 options,
@@ -268,8 +272,15 @@ pub fn convert_detail(v: &Value, base: &ChampStats) -> ChampStats {
         .flatten()
         .take(4)
         .filter_map(|t| {
+            let zh = t["name_zh"].as_str().unwrap_or_default();
+            let en = t["name_en"].as_str().unwrap_or_default();
+            if zh.is_empty() && en.is_empty() {
+                return None;
+            }
             Some(AugStyle {
-                name: t["name_zh"].as_str().or_else(|| t["name_en"].as_str())?.to_string(),
+                name: if zh.is_empty() { en.to_string() } else { zh.to_string() },
+                name_hans: crate::i18n::to_simplified(zh),
+                name_en: en.to_string(),
                 pick_rate: t["pick"].as_f64(),
             })
         })
@@ -428,6 +439,7 @@ mod tests {
         assert_eq!(d.spells, vec![4, 6]);
         let a = &d.archetypes[0];
         assert_eq!((a.name.as_str(), a.tier.as_str(), a.win_rate), ("AP爆發", "S", Some(0.522)));
+        assert_eq!(a.name_hans, "AP爆发");
         assert_eq!(a.options, vec![3089, 4646, 3135, 123430]);
         assert_eq!(d.aug_styles[0].name, "近戰通用");
         // 强化风格不带胜率

@@ -113,7 +113,7 @@ async fn on_phase(app: &AppHandle, state: &Arc<AppState>, client: &LcuClient, ph
                 let mode = read_window_mode(client).await;
                 state.update(app, |s| s.window_mode = mode);
                 if mode == Some(0) && state.settings.read().unwrap().ocr_enabled {
-                    let _ = app.emit("toast", "当前是全屏模式，强化识别不可用。可在「选人」页一键改为无边框".to_string());
+                    let _ = app.emit("toast", crate::i18n::t("fullscreen_warn").to_string());
                 }
             }
             if phase == "InProgress" {
@@ -226,26 +226,16 @@ pub async fn set_borderless(client: &LcuClient) -> anyhow::Result<i64> {
     // 持久化到 game.cfg；部分客户端版本没有这个接口，失败不影响 PATCH 结果
     let _ = client.request(Method::POST, "/lol-game-settings/v1/save", None).await;
     let now = read_window_mode(client).await.unwrap_or(-1);
-    anyhow::ensure!(now == WINDOW_MODE_BORDERLESS, "写入后读回的值是 {now}，请在游戏内 Esc → 视频 → 窗口模式 手动确认");
+    anyhow::ensure!(now == WINDOW_MODE_BORDERLESS, "{} ({now})", crate::i18n::t("readback_mismatch"));
     Ok(now)
 }
 
-/// 读取客户端语言；数据语言为「跟随客户端」且与当前不同时重新同步
+/// 读取客户端语言：只用于决定 OCR 语言（游戏画面的文字语言）；数据语言跟随界面语言
 async fn detect_locale(app: &AppHandle, state: &Arc<AppState>, client: &LcuClient) {
     let Ok(v) = client.get("/riotclient/region-locale").await else { return };
     let Some(loc) = v["locale"].as_str().map(String::from) else { return };
     *state.client_locale.write().unwrap() = Some(loc.clone());
     state.update(app, |s| s.client_locale = Some(loc));
-    let want = crate::data::effective_locale(state);
-    let have = state.catalog.read().unwrap().as_ref().map(|c| c.locale.clone());
-    if have.as_deref() != Some(want.as_str()) {
-        let (app, state) = (app.clone(), state.clone());
-        tauri::async_runtime::spawn(async move {
-            if let Err(e) = crate::data::sync(app, state, false).await {
-                log::warn!("数据同步失败：{e:#}");
-            }
-        });
-    }
 }
 
 fn on_ready_check(state: &Arc<AppState>, client: &LcuClient, data: &Value) {

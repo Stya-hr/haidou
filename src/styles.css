@@ -110,3 +110,4 @@ select { font: inherit; width: 100%; padding: 6px 8px; color: var(--fg); backgro
 .ov-source { position: fixed; right: 8px; bottom: 6px; font-size: 11px; color: rgba(230, 225, 211, .7); text-shadow: 0 0 3px #000; }
 .hint { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
 .hint.warn { border-left-color: #f0883e; color: var(--fg); }
+.saved { font-size: 11px; color: var(--ok); font-weight: normal; }

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner.svg" alt="HexPilot · ARAM Mayhem Companion" width="100%">
+  <img src="assets/banner.png" alt="HexPilot · ARAM Mayhem Companion" width="100%">
 </p>
 
 <p align="center">
@@ -7,14 +7,19 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Stya-hr/hexpilot/actions/workflows/portable.yml"><img src="https://img.shields.io/github/actions/workflow/status/Stya-hr/hexpilot/portable.yml?label=build&logo=githubactions&logoColor=white" alt="Build"></a>
-  <a href="https://github.com/Stya-hr/hexpilot/releases"><img src="https://img.shields.io/github/v/release/Stya-hr/hexpilot?include_prereleases&logo=github&label=release" alt="Release"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/Stya-hr/hexpilot?color=c8a14b" alt="License"></a>
-  <img src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D6?logo=windows&logoColor=white" alt="Platform">
+  <a href="https://github.com/Stya-hr/hexpilot/actions/workflows/portable.yml"><img src="https://github.com/Stya-hr/hexpilot/actions/workflows/portable.yml/badge.svg" alt="Build"></a>
+  <a href="https://github.com/Stya-hr/hexpilot/releases"><img src="https://img.shields.io/github/v/release/Stya-hr/hexpilot?include_prereleases&label=release&color=c8a14b" alt="Release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-c8a14b" alt="License: MIT"></a>
+</p>
+<p align="center">
+  <img src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D6" alt="Platform: Windows 10 | 11">
   <img src="https://img.shields.io/badge/Tauri-2-24C8DB?logo=tauri&logoColor=white" alt="Tauri 2">
   <img src="https://img.shields.io/badge/Rust-stable-000000?logo=rust&logoColor=white" alt="Rust">
   <img src="https://img.shields.io/badge/SolidJS-1.9-2C4F7C?logo=solid&logoColor=white" alt="SolidJS">
+</p>
+<p align="center">
   <a href="https://arammeta.com/?ref=hexpilot"><img src="https://img.shields.io/badge/data-AramMeta-4fb3bf" alt="Data: AramMeta"></a>
+  <a href="https://www.communitydragon.org/"><img src="https://img.shields.io/badge/assets-CommunityDragon-6e7681" alt="Assets: CommunityDragon"></a>
 </p>
 
 <p align="center">
@@ -36,6 +41,7 @@
 | ✨ | **Summoner spells** | One click or automatic (off by default) |
 | 🔍 | **Augment OCR** | Scans at game start, on level-ups (3/7/11/15) and while dead, or on hotkey `Ctrl+Shift+A`; matches **Simplified Chinese (both CN and Garena/SEA translations), Traditional Chinese and English** names |
 | 🪟 | **In-game overlay** | Tier and pick rate under each augment card; transparent, always-on-top, click-through |
+| 🌐 | **Three languages** | 简体中文 / 繁體中文 / English, following the system by default; champion, augment and item names follow the UI language; settings save and apply instantly |
 | 📦 | **Portable** | Unzip and run; all data lives in `hexpilot-data/` next to the executable |
 
 > Runes are **disabled** in ARAM: Mayhem ([Riot Support](https://support.riotgames.com/en-us/league-of-legends/events/league-of-legends-aram-mayhem-game-mode)), so there is no rune import.
@@ -65,7 +71,7 @@ HexPilot only uses methods Riot allows for third-party tools. There is nothing t
 
 | Data | Source | Notes |
 |---|---|---|
-| Champions, augments, items, spells | [CommunityDragon](https://raw.communitydragon.org) | Cached per patch; the data language follows the client |
+| Champions, augments, items, spells | [CommunityDragon](https://raw.communitydragon.org) | Cached per patch; the data language follows the UI language |
 | Win rate, tiers, pick rate, archetypes | [AramMeta](https://arammeta.com/?ref=hexpilot) | Used under its data terms: a clickable credit wherever its numbers appear; the index is fetched once per patch; champion details are fetched only when needed and cached; raw tables are never stored or exported |
 | Custom | Local or remote JSON | Settings → Stats source; format: [`samples/mayhem-stats.sample.json`](samples/mayhem-stats.sample.json) |
 

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner.svg" alt="海克斯领航 · HexPilot ARAM Mayhem Companion" width="100%">
+  <img src="assets/banner.png" alt="海克斯领航 · HexPilot ARAM Mayhem Companion" width="100%">
 </p>
 
 <p align="center">
@@ -7,14 +7,19 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Stya-hr/hexpilot/actions/workflows/portable.yml"><img src="https://img.shields.io/github/actions/workflow/status/Stya-hr/hexpilot/portable.yml?label=build&logo=githubactions&logoColor=white" alt="Build"></a>
-  <a href="https://github.com/Stya-hr/hexpilot/releases"><img src="https://img.shields.io/github/v/release/Stya-hr/hexpilot?include_prereleases&logo=github&label=release" alt="Release"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/Stya-hr/hexpilot?color=c8a14b" alt="License"></a>
-  <img src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D6?logo=windows&logoColor=white" alt="Platform">
+  <a href="https://github.com/Stya-hr/hexpilot/actions/workflows/portable.yml"><img src="https://github.com/Stya-hr/hexpilot/actions/workflows/portable.yml/badge.svg" alt="Build"></a>
+  <a href="https://github.com/Stya-hr/hexpilot/releases"><img src="https://img.shields.io/github/v/release/Stya-hr/hexpilot?include_prereleases&label=release&color=c8a14b" alt="Release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-c8a14b" alt="License: MIT"></a>
+</p>
+<p align="center">
+  <img src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D6" alt="Platform: Windows 10 | 11">
   <img src="https://img.shields.io/badge/Tauri-2-24C8DB?logo=tauri&logoColor=white" alt="Tauri 2">
   <img src="https://img.shields.io/badge/Rust-stable-000000?logo=rust&logoColor=white" alt="Rust">
   <img src="https://img.shields.io/badge/SolidJS-1.9-2C4F7C?logo=solid&logoColor=white" alt="SolidJS">
+</p>
+<p align="center">
   <a href="https://arammeta.com/?ref=hexpilot"><img src="https://img.shields.io/badge/data-AramMeta-4fb3bf" alt="Data: AramMeta"></a>
+  <a href="https://www.communitydragon.org/"><img src="https://img.shields.io/badge/assets-CommunityDragon-6e7681" alt="Assets: CommunityDragon"></a>
 </p>
 
 <p align="center">
@@ -36,6 +41,7 @@
 | ✨ | **召唤师技能** | 一键设置或自动设置（默认关闭） |
 | 🔍 | **强化识别（OCR）** | 开局、升级（3/7/11/15）和阵亡期间自动识别，也可以按热键 `Ctrl+Shift+A` 触发；**简中（国服、国际服两套译名）、繁中、英文**都能识别 |
 | 🪟 | **游戏内悬浮层** | 在每张强化卡片下方显示档位和选取率，透明、置顶、鼠标穿透 |
+| 🌐 | **三语界面** | 简体中文 / 繁體中文 / English，默认跟随系统；英雄、强化、装备名称随界面语言切换；设置修改后自动保存、立即生效 |
 | 📦 | **便携版** | zip 解压即用，所有数据都在程序旁边的 `hexpilot-data/` 里 |
 
 > 海克斯大乱斗**禁用符文**（[Riot 官方说明](https://support.riotgames.com/en-us/league-of-legends/events/league-of-legends-aram-mayhem-game-mode)），所以不提供符文导入。
@@ -65,7 +71,7 @@
 
 | 数据 | 来源 | 说明 |
 |---|---|---|
-| 英雄、强化、装备、技能 | [CommunityDragon](https://raw.communitydragon.org) | 按版本缓存；数据语言跟随客户端 |
+| 英雄、强化、装备、技能 | [CommunityDragon](https://raw.communitydragon.org) | 按版本缓存；数据语言跟随界面语言（简体用国际服译名） |
 | 胜率、档位、选取率、流派 | [AramMeta](https://arammeta.com/?ref=hexpilot) | 遵守其数据使用条款：显示数字的地方都有可点击的署名；总表每个版本拉取一次，英雄详情只在需要时拉取并缓存；不保存、不导出原始表 |
 | 自定义 | 本地或在线 JSON | 设置 → 统计来源；格式见 [`samples/mayhem-stats.sample.json`](samples/mayhem-stats.sample.json) |
 

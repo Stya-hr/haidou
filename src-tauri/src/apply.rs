@@ -5,6 +5,7 @@
 //! 绝不删除或覆盖玩家自己的方案。
 
 use crate::data::{Catalog, ChampStats, ItemBuild};
+use crate::i18n::t;
 use crate::lcu::http::LcuClient;
 use anyhow::{bail, Context, Result};
 use reqwest::Method;
@@ -23,13 +24,13 @@ pub fn champ_label(cat: &Catalog, champ_id: i64) -> String {
 
 pub async fn items(client: &LcuClient, champ_id: i64, label: &str, st: &ChampStats, cat: &Catalog) -> Result<()> {
     let me = client.get("/lol-summoner/v1/current-summoner").await?;
-    let sid = me["summonerId"].as_i64().context("读取召唤师 ID 失败")?;
+    let sid = me["summonerId"].as_i64().context(t("summoner_id_failed"))?;
     let path = format!("/lol-item-sets/v1/item-sets/{sid}/sets");
     let mut all = client.get(&path).await?;
 
     let blocks = item_blocks(st);
     if blocks.is_empty() {
-        bail!("数据中没有该英雄的出装");
+        bail!("{}", t("no_build"));
     }
 
     let uid = format!("{SET_PREFIX}{champ_id}");
@@ -47,7 +48,7 @@ pub async fn items(client: &LcuClient, champ_id: i64, label: &str, st: &ChampSta
         "blocks": blocks,
     });
 
-    let sets = all["itemSets"].as_array_mut().context("装备方案格式异常")?;
+    let sets = all["itemSets"].as_array_mut().context(t("item_sets_bad"))?;
     sets.retain(|s| s["uid"].as_str() != Some(uid.as_str()));
     sets.push(set);
     client.request(Method::PUT, &path, Some(&all)).await?;
@@ -55,7 +56,7 @@ pub async fn items(client: &LcuClient, champ_id: i64, label: &str, st: &ChampSta
 }
 
 pub async fn spells(client: &LcuClient, ids: &[i64]) -> Result<()> {
-    let [a, b] = ids else { bail!("数据包中的召唤师技能应为 2 个") };
+    let [a, b] = ids else { bail!("{}", t("spells_need_two")) };
     client
         .request(
             Method::PATCH,
@@ -72,7 +73,7 @@ fn pct(v: Option<f64>) -> String {
 
 /// 游戏商店里显示的方案名，例如「HexPilot · 阿狸 S 胜率52.3% · v16.23」
 fn set_title(label: &str, st: &ChampStats, cat: &Catalog) -> String {
-    let wr = st.win_rate.map(|_| format!(" 胜率{}", pct(st.win_rate))).unwrap_or_default();
+    let wr = st.win_rate.map(|_| format!(" {}{}", t("win_rate"), pct(st.win_rate))).unwrap_or_default();
     format!("{PAGE_PREFIX} · {label} {}{wr} · v{}", st.tier, cat.patch).replace("  ", " ")
 }
 
@@ -89,14 +90,14 @@ pub fn item_blocks(st: &ChampStats) -> Vec<Value> {
     let b = st.items.as_ref().unwrap_or(&empty);
     let mut out = Vec::new();
     if !b.start.is_empty() {
-        out.push(block("出门装".into(), &b.start));
+        out.push(block(t("block_start").into(), &b.start));
     }
     if !b.boots.is_empty() {
-        out.push(block("鞋子".into(), &b.boots));
+        out.push(block(t("block_boots").into(), &b.boots));
     }
     if st.archetypes.is_empty() {
         if !b.core.is_empty() {
-            out.push(block("核心装".into(), &b.core));
+            out.push(block(t("block_core").into(), &b.core));
         }
     } else {
         for a in &st.archetypes {
@@ -104,18 +105,18 @@ pub fn item_blocks(st: &ChampStats) -> Vec<Value> {
             if ids.is_empty() {
                 continue;
             }
-            let mut title = format!("{} [{}]", a.name, a.tier);
+            let mut title = format!("{} [{}]", a.display_name(), a.tier);
             if a.win_rate.is_some() {
-                title += &format!(" 胜率{}", pct(a.win_rate));
+                title += &format!(" {}{}", t("win_rate"), pct(a.win_rate));
             }
             if a.pick_rate.is_some() {
-                title += &format!(" 选取{}", pct(a.pick_rate));
+                title += &format!(" {}{}", t("pick_rate"), pct(a.pick_rate));
             }
             out.push(block(title, &ids));
         }
     }
     if !b.situational.is_empty() {
-        out.push(block("可选装".into(), &b.situational));
+        out.push(block(t("block_situational").into(), &b.situational));
     }
     out
 }
@@ -132,15 +133,15 @@ pub async fn apply_all(client: &LcuClient, cat: &Catalog, champ_id: i64, st: &Ch
     if w.items {
         if st.items.is_some() || !st.archetypes.is_empty() {
             out.push(match items(client, champ_id, &label, st, cat).await {
-                Ok(_) => "出装 ✓".into(),
-                Err(e) => format!("出装 ✗ {e:#}"),
+                Ok(_) => format!("{} ✓", t("items")),
+                Err(e) => format!("{} ✗ {e:#}", t("items")),
             });
         }
     }
     if w.spells && !st.spells.is_empty() {
         out.push(match spells(client, &st.spells).await {
-            Ok(_) => "技能 ✓".into(),
-            Err(e) => format!("技能 ✗ {e:#}"),
+            Ok(_) => format!("{} ✓", t("spells")),
+            Err(e) => format!("{} ✗ {e:#}", t("spells")),
         });
     }
     out
@@ -153,19 +154,20 @@ mod tests {
 
     #[test]
     fn blocks_per_archetype() {
+        // 全局语言默认是简体，且没有测试会修改它
         let st = ChampStats {
             tier: "S".into(),
             win_rate: Some(0.5233),
             items: Some(ItemBuild { boots: vec![3020], situational: vec![3157], ..Default::default() }),
             archetypes: vec![Archetype {
-                name: "AP爆發".into(), tier: "S".into(), core: vec![6655, 4645], options: vec![3089],
+                name: "AP爆發".into(), name_hans: "AP爆发".into(), name_en: "AP burst".into(), tier: "S".into(), core: vec![6655, 4645], options: vec![3089],
                 win_rate: Some(0.522), pick_rate: Some(0.384), games: None,
             }],
             ..Default::default()
         };
         let b = item_blocks(&st);
         let titles: Vec<&str> = b.iter().map(|x| x["type"].as_str().unwrap()).collect();
-        assert_eq!(titles, vec!["鞋子", "AP爆發 [S] 胜率52.2% 选取38.4%", "可选装"]);
+        assert_eq!(titles, vec!["鞋子", "AP爆发 [S] 胜率52.2% 选取38.4%", "可选装"]);
         assert_eq!(b[1]["items"][2]["id"], "3089");
         let cat = Catalog { patch: "16.23".into(), ..Default::default() };
         assert_eq!(set_title("阿狸", &st, &cat), "HexPilot · 阿狸 S 胜率52.3% · v16.23");

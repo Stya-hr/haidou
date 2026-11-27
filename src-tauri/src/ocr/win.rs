@@ -51,8 +51,8 @@ impl Worker {
 
     pub async fn scan(&self, lang: &str) -> Result<Option<Scan>> {
         let (tx, rx) = tokio::sync::oneshot::channel();
-        self.tx.send((lang.to_string(), tx)).map_err(|_| anyhow!("OCR 线程已退出"))?;
-        rx.await.map_err(|_| anyhow!("OCR 线程无响应"))?
+        self.tx.send((lang.to_string(), tx)).map_err(|_| anyhow!("OCR worker exited"))?;
+        rx.await.map_err(|_| anyhow!("OCR worker not responding"))?
     }
 }
 
@@ -77,7 +77,7 @@ fn capture(left: i32, top: i32, width: i32, height: i32) -> Result<Capture> {
     unsafe {
         let screen = GetDC(None);
         if screen.is_invalid() {
-            bail!("GetDC 失败");
+            bail!("GetDC failed");
         }
         let mem = CreateCompatibleDC(Some(screen));
         let bmp = CreateCompatibleBitmap(screen, width, height);
@@ -114,7 +114,7 @@ fn capture(left: i32, top: i32, width: i32, height: i32) -> Result<Capture> {
 
         blt?;
         if rows == 0 {
-            bail!("GetDIBits 失败");
+            bail!("GetDIBits failed");
         }
         for px in bgra.chunks_exact_mut(4) {
             px[3] = 255;

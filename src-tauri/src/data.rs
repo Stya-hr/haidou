@@ -64,7 +64,10 @@ pub struct ItemBuild {
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 #[serde(rename_all = "camelCase", default)]
 pub struct Archetype {
+    /// 繁体中文原名
     pub name: String,
+    pub name_hans: String,
+    pub name_en: String,
     pub tier: String,
     pub core: Vec<i64>,
     pub options: Vec<i64>,
@@ -73,11 +76,28 @@ pub struct Archetype {
     pub games: Option<i64>,
 }
 
+impl Archetype {
+    pub fn display_name(&self) -> &str {
+        localized(&self.name, &self.name_hans, &self.name_en)
+    }
+}
+
+fn localized<'a>(hant: &'a str, hans: &'a str, en: &'a str) -> &'a str {
+    let pick = match crate::i18n::get() {
+        crate::i18n::Lang::Hans => hans,
+        crate::i18n::Lang::Hant => hant,
+        crate::i18n::Lang::En => en,
+    };
+    if pick.is_empty() { hant } else { pick }
+}
+
 /// 强化风格（如「近战普攻型·魔攻」）：只展示选取率
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 #[serde(rename_all = "camelCase", default)]
 pub struct AugStyle {
     pub name: String,
+    pub name_hans: String,
+    pub name_en: String,
     pub pick_rate: Option<f64>,
 }
 
@@ -269,8 +289,8 @@ pub async fn fetch_json(http: &reqwest::Client, url: &str) -> Result<Value> {
         .timeout(Duration::from_secs(20))
         .send()
         .await
-        .with_context(|| format!("请求失败 {url}"))?;
-    anyhow::ensure!(r.status().is_success(), "{url} 返回 {}", r.status());
+        .with_context(|| format!("{} {url}", crate::i18n::t("request_failed")))?;
+    anyhow::ensure!(r.status().is_success(), "{url} → HTTP {}", r.status());
     Ok(r.json().await?)
 }
 
@@ -278,10 +298,10 @@ async fn load_custom(http: &reqwest::Client, src: &str) -> Result<StatsPack> {
     let raw: Value = if src.starts_with("http://") || src.starts_with("https://") {
         fetch_json(http, src).await?
     } else {
-        serde_json::from_str(&tokio::fs::read_to_string(src).await.context("读取本地数据包失败")?)?
+        serde_json::from_str(&tokio::fs::read_to_string(src).await.context(crate::i18n::t("custom_pack_read_failed"))?)?
     };
-    let pack: StatsPack = serde_json::from_value(raw).context("数据包格式不正确")?;
-    anyhow::ensure!(pack.schema == 1, "不支持的数据包 schema：{}", pack.schema);
+    let pack: StatsPack = serde_json::from_value(raw).context(crate::i18n::t("custom_pack_bad"))?;
+    anyhow::ensure!(pack.schema == 1, "schema {} ≠ 1", pack.schema);
     Ok(pack)
 }
 
@@ -290,21 +310,9 @@ fn publish(app: &AppHandle, state: &AppState, cat: Catalog) {
     let _ = app.emit("catalog-updated", ());
 }
 
-/// 当前生效的数据语言
-pub fn effective_locale(state: &AppState) -> String {
-    let set = state.settings.read().unwrap().locale.clone();
-    if set != "auto" && !set.is_empty() {
-        return set;
-    }
-    state
-        .client_locale
-        .read()
-        .unwrap()
-        .as_deref()
-        .map(crate::settings::cdragon_locale)
-        // 还没连上客户端：沿用上次的数据语言（首次运行为英文，连上客户端后自动切换）
-        .or_else(|| state.catalog.read().unwrap().as_ref().map(|c| c.locale.clone()))
-        .unwrap_or_else(|| "default".into())
+/// 当前生效的数据语言：跟随界面语言
+pub fn effective_locale(_state: &AppState) -> String {
+    crate::i18n::data_locale(crate::i18n::get()).to_string()
 }
 
 /// 启动时调用：先用缓存秒开，再后台检查版本更新。

@@ -278,11 +278,7 @@ pub struct EngineUnavailable(pub String);
 
 impl std::fmt::Display for EngineUnavailable {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "系统未安装 {} 的 OCR 组件：设置 → 时间和语言 → 语言和区域 → 添加/选择对应中文语言 → 语言选项 → 安装「光学字符识别」",
-            self.0
-        )
+        write!(f, "[{}] {}", self.0, crate::i18n::t("ocr_missing"))
     }
 }
 

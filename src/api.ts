@@ -31,10 +31,10 @@ export interface Augment {
 export interface ChampAug { id: number; tier: string; pickRate: number | null }
 export interface ItemBuild { start: number[]; boots: number[]; core: number[]; situational: number[] }
 export interface Archetype {
-  name: string; tier: string; core: number[]; options: number[];
+  name: string; nameHans: string; nameEn: string; tier: string; core: number[]; options: number[];
   winRate: number | null; pickRate: number | null; games: number | null;
 }
-export interface AugStyle { name: string; pickRate: number | null }
+export interface AugStyle { name: string; nameHans: string; nameEn: string; pickRate: number | null }
 export interface ChampStats {
   tier: string; score: number | null; winRate: number | null; pickRate: number | null; games: number | null;
   augments: ChampAug[]; spells: number[]; items: ItemBuild | null;
@@ -57,7 +57,7 @@ export interface Catalog {
 }
 export interface Settings {
   autoAccept: boolean; acceptDelayMs: number; alwaysOnTop: boolean;
-  leagueDir: string; statsSource: string; statsUrl: string; cdragonBase: string; locale: string;
+  leagueDir: string; statsSource: string; statsUrl: string; cdragonBase: string; uiLang: string;
   autoItems: boolean; autoSpells: boolean;
   ocrEnabled: boolean; overlayEnabled: boolean; ocrLang: string; ocrHotkey: string;
 }
@@ -66,6 +66,7 @@ export const api = {
   snapshot: () => invoke<Snapshot>("get_snapshot"),
   catalog: () => invoke<Catalog | null>("get_catalog"),
   settings: () => invoke<Settings>("get_settings"),
+  uiLang: () => invoke<string>("get_ui_lang"),
   saveSettings: (settings: Settings) => invoke<void>("save_settings", { settings }),
   refreshData: () => invoke<void>("refresh_data"),
   benchSwap: (championId: number) => invoke<void>("bench_swap", { championId }),
@@ -114,12 +115,4 @@ export const pct = (v: number | null | undefined) =>
 export const championUrl = (cat: Catalog | null, c?: Champion) => {
   const t = cat?.stats?.attribution?.championUrl;
   return t && c ? t.replace("{alias}", c.alias.toLowerCase().replace(/[^a-z0-9]/g, "")) : undefined;
-};
-
-export const WINDOW_MODE_TEXT: Record<number, string> = { 0: "全屏", 1: "窗口", 2: "无边框" };
-
-export const PHASE_TEXT: Record<string, string> = {
-  None: "空闲", Lobby: "房间中", Matchmaking: "匹配中", ReadyCheck: "找到对局",
-  ChampSelect: "选人中", GameStart: "载入中", InProgress: "对局中", Reconnect: "等待重连",
-  WaitingForStats: "结算中", PreEndOfGame: "结算中", EndOfGame: "对局结束",
 };
