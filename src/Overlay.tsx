@@ -88,6 +88,8 @@ export default function Overlay() {
   const bottom = () => Math.max(0.08, Math.min(0.95, settings()?.overlayBottom ?? 0.253));
   const span = () => ({ left: slotX(-1) - cellW() / 2 - 10, right: slotX(1) + cellW() / 2 + 10 });
 
+  /** 标签随游戏画面高度缩放（以 1080p 为 1），高分辨率下不会显得太小 */
+  const scale = () => Math.max(0.85, Math.min(1.6, unit()));
   /** 标签下沿距卡片上沿 6px；设置里可整体上下移动 */
   const anchorBottom = () => `calc(${(1 - bottom()) * 100}% + 6px)`;
 
@@ -96,7 +98,7 @@ export default function Overlay() {
       <For each={slotted()}>
         {(c, i) => (
           <div class={`ov-pill ${RAR[c.aug?.rarity ?? ""] ?? ""}`} classList={{ best: c.best }}
-            style={{ left: `${c.left + cellW() / 2}px`, bottom: anchorBottom() }}>
+            style={{ left: `${c.left + cellW() / 2}px`, bottom: anchorBottom(), transform: `translateX(-50%) scale(${scale()})` }}>
             <Show when={c.best}><span class="ov-star">★</span></Show>
             <Show when={c.tier} fallback={<span class="ov-none">{t("no_tier")}</span>}>
               <span class={`tier t${tierRank(c.tier)}`}>{c.tier}</span>
@@ -107,7 +109,7 @@ export default function Overlay() {
           </div>
         )}
       </For>
-      <div class="ov-src" style={{ left: `${span().right - 10}px`, bottom: anchorBottom() }}>
+      <div class="ov-src" style={{ left: `${span().right - 10}px`, bottom: anchorBottom(), transform: `translateY(-4px) scale(${scale()})` }}>
         {cat()?.stats?.attribution?.label}
       </div>
     </Show>

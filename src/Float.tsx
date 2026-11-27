@@ -7,6 +7,9 @@ import { localName, setLang, t } from "./i18n";
  * 选人悬浮窗：吸附在客户端板凳卡片下方的横条。
  * 左：我的英雄；中：板凳英雄（点击交换，最强的高亮）；右：主流出装 + 导入、召唤师技能。
  */
+/** 悬浮条只放评分最高的几个板凳英雄（板凳最多 10 个），其余在主窗口里看 */
+const BENCH_MAX = 5;
+
 export default function Float() {
   const [snap, setSnap] = createSignal<Snapshot | null>(null);
   const [cat, setCat] = createSignal<Catalog | null>(null);
@@ -66,7 +69,7 @@ export default function Float() {
         <Show when={cs()!.benchEnabled && bench().length}>
           <div class="fl-sep" />
           <div class="fl-bench">
-            <For each={bench()}>
+            <For each={bench().slice(0, BENCH_MAX)}>
               {(id) => (
                 <button class="fl-benchbtn" classList={{ best: id === best() }} title={`${champ(id)?.name ?? ""} · ${t("fl_swap_tip")}`} onClick={() => swap(id)}>
                   <img src={champ(id)?.icon} alt="" />
@@ -74,13 +77,16 @@ export default function Float() {
                 </button>
               )}
             </For>
+            <Show when={bench().length > BENCH_MAX}>
+              <span class="fl-more" title={t("fl_more_tip")}>+{bench().length - BENCH_MAX}</span>
+            </Show>
           </div>
         </Show>
 
         <Show when={arch()}>
           <div class="fl-sep" />
           <div class="fl-items" title={`${localName(arch()!)} · ${t("win_rate")} ${pct(arch()!.winRate)}`}>
-            <For each={[...arch()!.core, ...arch()!.options].slice(0, 6)}>
+            <For each={[...arch()!.core, ...arch()!.options].slice(0, 5)}>
               {(id) => <img src={item(id)?.icon} title={item(id)?.name} alt="" />}
             </For>
           </div>

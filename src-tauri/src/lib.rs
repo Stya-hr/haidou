@@ -267,7 +267,7 @@ pub fn run() {
             // 悬浮窗：选人 / 对局时显示的横条小窗，可拖动，不进任务栏
             let float_win = WebviewWindowBuilder::new(app, float::LABEL, WebviewUrl::default())
                 .title("HexPilot")
-                .inner_size(600.0, 60.0)
+                .inner_size(640.0, 60.0)
                 .transparent(true)
                 .decorations(false)
                 .always_on_top(true)

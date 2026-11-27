@@ -213,3 +213,13 @@ html.floatwin, html.floatwin body { background: transparent !important; overflow
 .dbg { margin-bottom: 8px; padding: 0 2px; font-size: 11.5px; color: var(--muted); }
 .slider { display: flex; align-items: center; gap: 10px; }
 .slider input[type="range"] { flex: 1; height: 18px; padding: 0; background: none; border: 0; accent-color: var(--gold); }
+
+/* 布局修正 */
+.hint-line { flex-basis: 100%; }
+.fl-items { min-width: 0; overflow: hidden; }
+.fl-bench { flex: none; }
+.fl-avatar, .fl-me, .fl-spells, .fl-import, .fl-x, .fl-sep { flex: none; }
+.fl-more { flex: none; align-self: center; padding: 0 5px; height: 20px; line-height: 20px; border-radius: 10px; font-size: 11px; color: var(--muted); background: var(--surface-2); border: 1px solid var(--line); }
+.ov-pill, .ov-src { transform-origin: 50% 100%; }
+.ov-src { transform-origin: 0 100%; }
+@media (max-width: 360px) { .brand span { display: none; } }

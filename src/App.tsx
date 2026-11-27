@@ -157,13 +157,13 @@ function WindowModeHint(p: { snap: Snapshot; notify: (m: string) => void; always
   return (
     <Show when={p.always || mode() === 0}>
       <div class="hint" classList={{ warn: mode() === 0 }}>
-        {t("wm_label")}<b>{modeText()}</b>
-        <Show when={mode() === 0}>{t("wm_fullscreen_warn")}</Show>
+        <span>{t("wm_label")}<b>{modeText()}</b></span>
         <Show when={canFix()}>
           <button class="small right" disabled={busy()} onClick={fix}>{t("wm_fix")}</button>
         </Show>
+        <Show when={mode() === 0}><span class="hint-line">{t("wm_fullscreen_warn")}</span></Show>
         <Show when={p.snap.phase === "InProgress" && mode() !== 2}>
-          <span class="muted">{t("wm_in_game")}</span>
+          <span class="hint-line muted">{t("wm_in_game")}</span>
         </Show>
       </div>
     </Show>
