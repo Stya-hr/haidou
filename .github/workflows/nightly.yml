@@ -1,11 +1,9 @@
-# 每日预览版：构建 main 最新提交，替换固定标签 nightly 的预发布版本（不会成为 Latest）
+# 每日预览版：构建 main 最新提交，只上传 Actions 构建产物，不发布 Release（与正式版分开）
 name: nightly
 on:
   schedule:
     - cron: "0 18 * * *" # 每天北京时间 02:00
   workflow_dispatch:
-permissions:
-  contents: write
 concurrency:
   group: nightly
   cancel-in-progress: true
@@ -14,14 +12,13 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
-      # 定时触发时，没有新提交就跳过
+      # 定时触发时，与上次成功的 nightly 是同一提交就跳过
       - id: check
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          last=$(gh release view nightly --json targetCommitish -q .targetCommitish 2>/dev/null || true)
+          last=$(gh run list -R "$GITHUB_REPOSITORY" -w nightly -s success -L 1 --json headSha -q '.[0].headSha' 2>/dev/null || true)
           if [ "${{ github.event_name }}" = "schedule" ] && [ "$last" = "$GITHUB_SHA" ]; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
           fi
@@ -45,24 +42,10 @@ jobs:
         run: pnpm portable
         env:
           PACK_NAME: ${{ steps.check.outputs.name }}
+      # 上传解压后的文件夹：GitHub 下载产物时会自动打包成 zip，避免 zip 套 zip
       - if: steps.check.outputs.skip != 'true'
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          stable=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || echo "")
-          {
-            echo "⚠️ 每日预览版，自动构建自 \`main\` 的最新提交 \`${GITHUB_SHA::7}\`，未经实测，可能不稳定。正式版见 [Releases](https://github.com/${GITHUB_REPOSITORY}/releases/latest)。"
-            echo
-            echo "⚠️ Nightly preview built from \`main\` at \`${GITHUB_SHA::7}\`. Untested and may be unstable. Stable builds: [latest release](https://github.com/${GITHUB_REPOSITORY}/releases/latest)."
-            echo
-            if [ -n "$stable" ]; then
-              echo "### ${stable} 之后的改动 · Changes since ${stable}"
-              echo
-              git log --no-merges --format='- %s (%h)' "${stable}..HEAD"
-            fi
-          } > nightly-notes.md
-          gh release delete nightly --cleanup-tag -y 2>/dev/null || true
-          gh release create nightly "dist-portable/${{ steps.check.outputs.name }}.zip" \
-            --prerelease --latest=false --target "$GITHUB_SHA" \
-            --title "Nightly $(date -u +%Y-%m-%d) (${GITHUB_SHA::7})" --notes-file nightly-notes.md
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.check.outputs.name }}
+          path: dist-portable/hexpilot/
+          retention-days: 30
