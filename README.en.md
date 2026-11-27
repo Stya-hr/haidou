@@ -42,6 +42,7 @@
 | 🔍 | **Augment OCR** | Scans at game start, on level-ups (3/7/11/15) and while dead, or on hotkey `Ctrl+Shift+A`; matches **Simplified Chinese (both CN and Garena/SEA translations), Traditional Chinese and English** names |
 | 🪟 | **In-game overlay** | Tier and pick rate under each augment card; transparent, always-on-top, click-through |
 | 🌐 | **Three languages** | 简体中文 / 繁體中文 / English, following the system by default; champion, augment and item names follow the UI language; settings save and apply instantly |
+| 🔄 | **Auto-updating data** | Checks in the background and pulls new patches/stats with a notice; never during games or champ select; can be turned off |
 | 📦 | **Portable** | Unzip and run; all data lives in `hexpilot-data/` next to the executable |
 
 > Runes are **disabled** in ARAM: Mayhem ([Riot Support](https://support.riotgames.com/en-us/league-of-legends/events/league-of-legends-aram-mayhem-game-mode)), so there is no rune import.

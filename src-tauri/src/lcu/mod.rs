@@ -121,7 +121,12 @@ async fn on_phase(app: &AppHandle, state: &Arc<AppState>, client: &LcuClient, ph
                 tauri::async_runtime::spawn(crate::ocr::run(app.clone(), state.clone()));
             }
         }
-        "None" | "Lobby" => state.update(app, |s| s.queue_id = None),
+        "None" | "Lobby" | "EndOfGame" => {
+            state.update(app, |s| s.queue_id = None);
+            // 空闲时补查：距上次检查超过 2 小时
+            let (app, state) = (app.clone(), state.clone());
+            tauri::async_runtime::spawn(async move { crate::data::maybe_update(&app, &state, 2 * 3600).await });
+        }
         _ => {}
     }
 }

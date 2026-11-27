@@ -118,7 +118,13 @@ const D = {
   s_pack: ["数据包（URL 或本地 JSON 路径）", "資料包（URL 或本機 JSON 路徑）", "Data pack (URL or local JSON path)"],
   s_cdragon: ["CommunityDragon 地址", "CommunityDragon 位址", "CommunityDragon URL"],
   s_league_dir: ["客户端目录（可选，自动识别失败时填写）", "用戶端目錄（選填，自動偵測失敗時填寫）", "Client folder (optional, if auto-detect fails)"],
-  s_refresh: ["强制更新数据", "強制更新資料", "Refresh data"],
+  s_auto_update: ["自动更新数据（对局和选人时不更新）", "自動更新資料（對戰與選角時不更新）", "Update data automatically (not during games or champ select)"],
+  s_checked: ["上次检查", "上次檢查", "Last checked"],
+  ago_now: ["刚刚", "剛剛", "just now"],
+  ago_min: ["{n} 分钟前", "{n} 分鐘前", "{n} min ago"],
+  ago_hour: ["{n} 小时前", "{n} 小時前", "{n} h ago"],
+  ago_day: ["{n} 天前", "{n} 天前", "{n} d ago"],
+  s_refresh: ["立即检查更新", "立即檢查更新", "Check for updates now"],
   s_refreshing: ["更新中…", "更新中…", "Refreshing…"],
   s_refreshed: ["数据已更新", "資料已更新", "Data refreshed"],
   s_refresh_failed: ["更新失败：", "更新失敗：", "Refresh failed: "],
@@ -142,6 +148,16 @@ export function t(key: Key, vars?: Record<string, string | number>): string {
   if (vars) for (const [k, v] of Object.entries(vars)) s = s.replace(`{${k}}`, String(v));
   return s;
 }
+
+/** 相对时间：刚刚 / n 分钟前 / n 小时前 / n 天前 */
+export const ago = (unixSecs: number) => {
+  if (!unixSecs) return "?";
+  const s = Math.max(0, Date.now() / 1000 - unixSecs);
+  if (s < 60) return t("ago_now");
+  if (s < 3600) return t("ago_min", { n: Math.floor(s / 60) });
+  if (s < 86400) return t("ago_hour", { n: Math.floor(s / 3600) });
+  return t("ago_day", { n: Math.floor(s / 86400) });
+};
 
 /** 阶段名：未知阶段原样显示 */
 export const phaseText = (p: string) => (`ph_${p}` in D ? t(`ph_${p}` as Key) : p);

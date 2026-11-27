@@ -137,6 +137,7 @@ table! {
     "custom_pack_read_failed" => ["读取本地数据包失败", "讀取本機資料包失敗", "Failed to read local data pack"],
     "custom_pack_bad" => ["数据包格式不正确", "資料包格式不正確", "Invalid data pack format"],
     "request_failed" => ["请求失败", "請求失敗", "Request failed"],
+    "data_updated" => ["数据已更新", "資料已更新", "Data updated"],
 }
 
 /// 繁体 → 简体（只覆盖游戏统计里常见的字，够用于流派/风格名称）

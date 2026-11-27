@@ -219,6 +219,7 @@ pub fn run() {
                     log::warn!("数据同步失败：{e:#}");
                 }
             });
+            tauri::async_runtime::spawn(data::auto_update(app.handle().clone(), state.clone()));
             tauri::async_runtime::spawn(lcu::supervise(app.handle().clone(), state));
             Ok(())
         })

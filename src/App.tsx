@@ -4,7 +4,7 @@ import {
   api, Archetype, augInfo, Augment, Catalog, Champion, champScore, ChampStats, championUrl, inPool,
   MAYHEM_QUEUE, pct, Settings, Snapshot, Thing, tierRank,
 } from "./api";
-import { Key, lang, localName, phaseText, setLang, t } from "./i18n";
+import { ago, Key, lang, localName, phaseText, setLang, t } from "./i18n";
 
 type Tab = "select" | "augments" | "settings";
 
@@ -498,7 +498,7 @@ function SettingsView(p: { snap: Snapshot; cat: Catalog | null; notify: (m: stri
     try { await api.refreshData(); p.notify(t("s_refreshed")); } catch (e) { p.notify(t("s_refresh_failed") + e); }
     setBusy(false);
   };
-  const check = (k: "autoAccept" | "alwaysOnTop" | "autoItems" | "autoSpells" | "ocrEnabled" | "overlayEnabled", key: Key) => (
+  const check = (k: "autoAccept" | "alwaysOnTop" | "autoItems" | "autoSpells" | "ocrEnabled" | "overlayEnabled" | "autoUpdate", key: Key) => (
     <label class="row"><input type="checkbox" checked={s()![k]} onChange={(e) => patch(k, e.currentTarget.checked)} />{t(key)}</label>
   );
   const text = (k: TextKey, key: Key, ph = "") => (
@@ -551,6 +551,7 @@ function SettingsView(p: { snap: Snapshot; cat: Catalog | null; notify: (m: stri
           </select>
         </label>
         <Show when={s()!.statsSource === "custom"}>{text("statsUrl", "s_pack", "https://.../mayhem-stats.json")}</Show>
+        {check("autoUpdate", "s_auto_update")}
         {text("cdragonBase", "s_cdragon")}
         {text("leagueDir", "s_league_dir", "C:\\Riot Games\\League of Legends")}
 
@@ -558,7 +559,7 @@ function SettingsView(p: { snap: Snapshot; cat: Catalog | null; notify: (m: stri
           <button onClick={refresh} disabled={busy()}>{busy() ? t("s_refreshing") : t("s_refresh")}</button>
         </div>
         <div class="muted foot">
-          {t("s_client_lang")}：{p.snap.clientLocale ?? "?"} · {t("s_data_lang")}：{p.cat?.locale ?? "?"}
+          {t("s_checked")}：{ago(p.cat?.checkedAt ?? 0)} · {t("s_client_lang")}：{p.snap.clientLocale ?? "?"} · {t("s_data_lang")}：{p.cat?.locale ?? "?"}
           <br />
           {t("s_static")}：v{p.cat?.patch || "?"} · {p.cat?.champions.length ?? 0} {t("s_champs")} · {p.cat?.augments.filter((a) => inPool(p.cat, a)).length ?? 0} {t("s_augs")}
           <br />

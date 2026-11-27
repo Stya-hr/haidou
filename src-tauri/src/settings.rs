@@ -28,6 +28,8 @@ pub struct Settings {
     pub ocr_lang: String,
     /// 手动触发识别的全局热键
     pub ocr_hotkey: String,
+    /// 后台自动检查并更新数据（对局和选人期间不更新）
+    pub auto_update: bool,
 }
 
 impl Default for Settings {
@@ -47,6 +49,7 @@ impl Default for Settings {
             overlay_enabled: true,
             ocr_lang: "auto".into(),
             ocr_hotkey: "Ctrl+Shift+A".into(),
+            auto_update: true,
         }
     }
 }

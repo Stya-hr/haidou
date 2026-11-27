@@ -54,12 +54,14 @@ export interface Catalog {
   champions: Champion[]; augments: Augment[];
   items: Thing[]; spells: Thing[];
   stats: StatsPack | null; statsError: string | null;
+  checkedAt: number;
 }
 export interface Settings {
   autoAccept: boolean; acceptDelayMs: number; alwaysOnTop: boolean;
   leagueDir: string; statsSource: string; statsUrl: string; cdragonBase: string; uiLang: string;
   autoItems: boolean; autoSpells: boolean;
   ocrEnabled: boolean; overlayEnabled: boolean; ocrLang: string; ocrHotkey: string;
+  autoUpdate: boolean;
 }
 
 export const api = {

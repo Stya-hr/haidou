@@ -177,6 +177,9 @@ pub struct Catalog {
     pub stats: Option<StatsPack>,
     #[serde(default)]
     pub stats_error: Option<String>,
+    /// 上次检查更新的时间（Unix 秒）
+    #[serde(default)]
+    pub checked_at: u64,
 }
 
 /// `/lol-game-data/assets/ASSETS/UX/...` → CommunityDragon 上的小写路径
@@ -373,6 +376,7 @@ pub async fn sync(app: AppHandle, state: Arc<AppState>, force: bool) -> Result<(
                 spells: build_things(&base, &spells),
                 stats: None,
                 stats_error: None,
+                checked_at: 0,
             }
         }
     };
@@ -394,9 +398,56 @@ pub async fn sync(app: AppHandle, state: Arc<AppState>, force: bool) -> Result<(
     }
 
     let _ = std::fs::create_dir_all(&cache_dir);
+    cat.checked_at = now_secs();
+    // 与上一份数据相比，版本或统计有变化时提醒用户（首次加载不提醒）
+    let prev = state.catalog.read().unwrap().clone();
+    if let Some(prev) = prev.filter(|p| p.checked_at > 0) {
+        let ver = |c: &Catalog| (c.patch.clone(), c.stats.as_ref().map(|s| s.detail_version.clone() + &s.updated_at));
+        if ver(&prev) != ver(&cat) {
+            let stats = cat.stats.as_ref().map(|s| format!(" · {} {}", s.source, s.updated_at)).unwrap_or_default();
+            let _ = app.emit("toast", format!("{}：v{}{stats}", crate::i18n::t("data_updated"), cat.patch));
+        }
+    }
+
     let _ = std::fs::write(&cache_file, serde_json::to_vec(&cat)?);
     publish(&app, &state, cat);
     Ok(())
+}
+
+pub fn now_secs() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0)
+}
+
+/// 对局、选人、载入期间不更新：省资源，也避免推荐数据中途变化
+fn busy_phase(phase: &str) -> bool {
+    matches!(phase, "ChampSelect" | "GameStart" | "InProgress" | "Reconnect")
+}
+
+/// 距上次检查超过 `min_age` 秒且当前空闲时才同步。
+/// 同步本身很轻：CommunityDragon 只取版本号，版本没变就不下载；
+/// AramMeta 总表同版本内最多 3 天拉一次（见 arammeta::index）。
+pub async fn maybe_update(app: &AppHandle, state: &Arc<AppState>, min_age: u64) {
+    if !state.settings.read().unwrap().auto_update || busy_phase(&state.phase()) {
+        return;
+    }
+    let checked = state.catalog.read().unwrap().as_ref().map(|c| c.checked_at).unwrap_or(0);
+    if now_secs().saturating_sub(checked) < min_age {
+        return;
+    }
+    if let Err(e) = sync(app.clone(), state.clone(), false).await {
+        log::warn!("自动更新失败：{e:#}");
+    }
+}
+
+/// 常驻：每 30 分钟看一次，超过 6 小时未检查才真正检查
+pub async fn auto_update(app: AppHandle, state: Arc<AppState>) {
+    loop {
+        tokio::time::sleep(Duration::from_secs(30 * 60)).await;
+        maybe_update(&app, &state, 6 * 3600).await;
+    }
 }
 
 /// 按需加载英雄详情（出装、技能、完整强化表），合并进当前目录。
