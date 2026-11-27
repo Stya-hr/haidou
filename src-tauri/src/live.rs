@@ -25,25 +25,35 @@ pub async fn poll(app: AppHandle, state: Arc<AppState>) {
         return;
     }
     if let Ok(client) = local_https_client(Duration::from_secs(2)) {
-        let mut me: Option<String> = None;
         while state.phase() == "InProgress" {
-            if me.is_none() {
-                // 返回的是 JSON 字符串，如 "Name#TAG"
-                me = match client.get(format!("{BASE}/activeplayername")).send().await {
-                    Ok(r) if r.status().is_success() => r.json::<String>().await.ok(),
-                    _ => None,
-                };
-            }
-            let mine = match (&me, client.get(format!("{BASE}/playerlist")).send().await) {
-                (Some(name), Ok(r)) if r.status().is_success() => r
-                    .json::<Value>()
-                    .await
-                    .ok()
-                    .and_then(|v| find_me(&v, name).map(|p| (p["level"].as_i64(), p["isDead"].as_bool().unwrap_or(false)))),
+            // 等级直接取 activeplayer：不依赖「先找到自己是哪个玩家」，载入完成就能读到
+            let me = match client.get(format!("{BASE}/activeplayer")).send().await {
+                Ok(r) if r.status().is_success() => r.json::<Value>().await.ok(),
                 _ => None,
             };
-            let (level, dead) = mine.unwrap_or((None, false));
+            let level = me.as_ref().and_then(|v| v["level"].as_i64());
+            // 是否阵亡：在玩家列表里按 riotId / summonerName 找自己
+            let dead = match &me {
+                Some(v) => {
+                    let names: Vec<String> = ["riotId", "summonerName"]
+                        .iter()
+                        .filter_map(|k| v[*k].as_str().filter(|s| !s.is_empty()).map(String::from))
+                        .collect();
+                    match client.get(format!("{BASE}/playerlist")).send().await {
+                        Ok(r) if r.status().is_success() => r
+                            .json::<Value>()
+                            .await
+                            .ok()
+                            .and_then(|list| names.iter().find_map(|n| find_me(&list, n).cloned()))
+                            .map(|p| p["isDead"].as_bool().unwrap_or(false) || p["respawnTimer"].as_f64().unwrap_or(0.0) > 0.0)
+                            .unwrap_or(false),
+                        _ => false,
+                    }
+                }
+                None => false,
+            };
             let prev = state.snapshot.lock().unwrap().live_level;
+            // 刚进游戏（第一次读到等级）、升级、阵亡都触发识别
             if dead || (level.is_some() && level != prev) {
                 crate::ocr::arm(&state);
             }

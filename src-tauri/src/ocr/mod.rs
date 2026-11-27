@@ -2,12 +2,21 @@
 //!
 //! 合规与性能：
 //! - 只截屏（与录屏软件相同的 GDI 方式），不读游戏内存、不注入、不模拟输入；
-//! - 只有游戏窗口在前台时才截图；
-//! - 平时不扫描，只在「升级后 / 阵亡时 / 按下热键后 30 秒内」以约 2 次/秒的频率扫描，
-//!   识别到卡片后持续跟踪直到卡片消失。
+//! - 只有游戏窗口在前台时才截图。
+//!
+//! 触发逻辑（参考 Hexsight）：
+//! - 心跳：对局中每 1.2 s 截一次图，先做几微秒的像素检查（cards.rs），看到卡片才跑 OCR；
+//!   另外每 30 s 无条件跑一次 OCR 兜底（防止像素检查不认识的画面布局）。
+//!   这样即使升级 / 阵亡没触发，卡片出现后最多约 1.2 s 也会被识别。
+//! - 触发：升级、阵亡、热键后 30 s 内每 0.8 s 完整识别一次。
+//! - 卡片显示中：每 0.5 s 识别一次，跟踪重随；连续约 3 s 认不出才隐藏。
 
+#[cfg_attr(not(windows), allow(dead_code))]
+mod cards;
 #[cfg(windows)]
 mod win;
+
+pub use cards::CARD_BOTTOM;
 
 use crate::data::Catalog;
 use crate::state::AppState;
@@ -43,6 +52,8 @@ pub enum Outcome {
     NoGame,
     /// 游戏窗口不在前台（不截图）
     Background,
+    /// 心跳检查没看到卡片（没跑 OCR）
+    NoCards,
     Done(Scan),
 }
 
@@ -52,7 +63,7 @@ pub enum Outcome {
 pub struct OcrDebug {
     /// Unix 秒
     pub at: u64,
-    /// "no_game" | "background" | "scanned"
+    /// "no_game" | "background" | "no_cards" | "scanned"
     pub status: &'static str,
     pub lines: u32,
     pub matched: u32,
@@ -82,8 +93,14 @@ pub struct OfferCard {
 }
 
 pub const SCAN_WINDOW: Duration = Duration::from_secs(30);
-/// 扫描期间的间隔
-const SCAN_INTERVAL: Duration = Duration::from_millis(500);
+/// 卡片显示中的识别间隔
+const SHOWING_EVERY: Duration = Duration::from_millis(500);
+/// 被触发（升级 / 阵亡 / 热键）后的识别间隔
+const ARMED_EVERY: Duration = Duration::from_millis(800);
+/// 心跳：截图 + 像素检查的间隔
+const HEARTBEAT: Duration = Duration::from_millis(1200);
+/// 心跳期间无条件完整识别一次的间隔（兜底）
+const FULL_READ_EVERY: Duration = Duration::from_secs(30);
 /// 连续多少次认不出卡片才隐藏悬浮条
 const HIDE_AFTER_MISSES: u32 = 6;
 
@@ -235,14 +252,14 @@ pub fn resolve_langs(wanted: &[String], installed: &[String]) -> Vec<String> {
     out
 }
 
-async fn scan_once(lang: &str) -> anyhow::Result<Outcome> {
+async fn scan_once(lang: &str, probe: bool) -> anyhow::Result<Outcome> {
     #[cfg(windows)]
     {
-        worker().scan(lang).await
+        worker().scan(lang, probe).await
     }
     #[cfg(not(windows))]
     {
-        let _ = lang;
+        let _ = (lang, probe);
         Ok(Outcome::NoGame)
     }
 }
@@ -274,6 +291,8 @@ pub async fn run(app: AppHandle, state: Arc<AppState>) {
     let mut names: Vec<(i64, Vec<char>)> = Vec::new();
     let mut names_from: usize = 0;
     let mut misses: u32 = 0;
+    let mut last_scan: Option<Instant> = None;
+    let mut last_read: Option<Instant> = None;
     // 多个 OCR 语言轮流尝试，命中后本局锁定该语言
     let mut locked: Option<String> = None;
     let mut unavailable: HashSet<String> = HashSet::new();
@@ -285,12 +304,20 @@ pub async fn run(app: AppHandle, state: Arc<AppState>) {
             (s.ocr_enabled, s.overlay_enabled, s.ocr_lang.clone())
         };
         let armed = state.ocr_until.lock().unwrap().is_some_and(|t| Instant::now() < t);
-        let showing = !state.snapshot.lock().unwrap().offer.is_empty();
-        if !enabled || !(armed || showing) {
-            // 触发（升级 / 阵亡 / 热键）后 200ms 内开始扫描
+        let (showing, queue) = {
+            let s = state.snapshot.lock().unwrap();
+            (!s.offer.is_empty(), s.queue_id)
+        };
+        // 心跳只在大乱斗（或队列未知）时跑；触发和热键任何模式都响应
+        let mayhem = queue.is_none_or(|q| q == crate::lcu::MAYHEM_QUEUE);
+        let heartbeat_due = mayhem && last_scan.is_none_or(|t: Instant| t.elapsed() >= HEARTBEAT);
+        if !enabled || !(armed || showing || heartbeat_due) {
+            // 触发后 200ms 内开始扫描
             tokio::time::sleep(Duration::from_millis(200)).await;
             continue;
         }
+        // 只有纯心跳才先做像素检查；兜底：距上次完整识别超过 30 s 也直接识别
+        let probe = !(armed || showing) && last_read.is_some_and(|t: Instant| t.elapsed() < FULL_READ_EVERY);
 
         if let Some(cat) = state.catalog.read().unwrap().clone() {
             let key = Arc::as_ptr(&cat) as usize;
@@ -320,8 +347,14 @@ pub async fn run(app: AppHandle, state: Arc<AppState>) {
         };
 
         let started = Instant::now();
-        match scan_once(&lang).await {
+        last_scan = Some(started);
+        match scan_once(&lang, probe).await {
+            Ok(Outcome::NoCards) => {
+                let dbg = OcrDebug { at: crate::data::now_secs(), status: "no_cards", lang: lang.clone(), ..Default::default() };
+                state.update(&app, |s| s.ocr_debug = Some(dbg));
+            }
             Ok(Outcome::Done(scan)) => {
+                last_read = Some(started);
                 let offer = match_offer(&scan.lines, &names);
                 // 已显示时，只认出一张卡（如重随动画中）也视为卡片界面仍在
                 let partial = showing && offer.is_empty() && !match_cards(&scan.lines, &names, 1).is_empty();
@@ -370,8 +403,17 @@ pub async fn run(app: AppHandle, state: Arc<AppState>) {
                 tokio::time::sleep(Duration::from_secs(5)).await;
             }
         }
-        let spent = started.elapsed();
-        tokio::time::sleep(SCAN_INTERVAL.saturating_sub(spent)).await;
+        let showing_now = !state.snapshot.lock().unwrap().offer.is_empty();
+        let armed_now = state.ocr_until.lock().unwrap().is_some_and(|t| Instant::now() < t);
+        let pause = if showing_now {
+            SHOWING_EVERY
+        } else if armed_now {
+            ARMED_EVERY
+        } else {
+            // 心跳：回到循环顶部等到下一次心跳
+            Duration::from_millis(200)
+        };
+        tokio::time::sleep(pause.saturating_sub(started.elapsed())).await;
     }
 
     state.update(&app, |s| s.offer.clear());

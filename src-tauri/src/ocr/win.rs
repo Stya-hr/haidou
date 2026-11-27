@@ -23,7 +23,8 @@ const REGION: (f32, f32, f32, f32) = (0.10, 0.10, 0.90, 0.78); // left, top, rig
 type Reply = tokio::sync::oneshot::Sender<Result<Outcome>>;
 
 enum Msg {
-    Scan(String, Reply),
+    /// (语言, 是否先做廉价检查：看不到卡片就不跑 OCR)
+    Scan(String, bool, Reply),
     Installed(tokio::sync::oneshot::Sender<Vec<String>>),
 }
 
@@ -43,10 +44,10 @@ impl Worker {
                 let mut engines: HashMap<String, Option<OcrEngine>> = HashMap::new();
                 for msg in rx {
                     match msg {
-                        Msg::Scan(lang, reply) => {
+                        Msg::Scan(lang, probe, reply) => {
                             let engine = engines.entry(lang.clone()).or_insert_with(|| create_engine(&lang));
                             let r = match engine {
-                                Some(e) => scan(e),
+                                Some(e) => scan(e, probe),
                                 None => Err(EngineUnavailable(lang).into()),
                             };
                             let _ = reply.send(r);
@@ -61,9 +62,9 @@ impl Worker {
         Self { tx }
     }
 
-    pub async fn scan(&self, lang: &str) -> Result<Outcome> {
+    pub async fn scan(&self, lang: &str, probe: bool) -> Result<Outcome> {
         let (tx, rx) = tokio::sync::oneshot::channel();
-        self.tx.send(Msg::Scan(lang.to_string(), tx)).map_err(|_| anyhow!("OCR worker exited"))?;
+        self.tx.send(Msg::Scan(lang.to_string(), probe, tx)).map_err(|_| anyhow!("OCR worker exited"))?;
         rx.await.map_err(|_| anyhow!("OCR worker not responding"))?
     }
 
@@ -168,7 +169,7 @@ pub fn game_rect() -> Option<(i32, i32, i32, i32)> {
     (cw >= 320 && ch >= 240).then_some((origin.x, origin.y, cw, ch))
 }
 
-fn scan(engine: &OcrEngine) -> Result<Outcome> {
+fn scan(engine: &OcrEngine, probe: bool) -> Result<Outcome> {
     let Some(hwnd) = find_game() else { return Ok(Outcome::NoGame) };
     if unsafe { GetForegroundWindow() } != hwnd {
         return Ok(Outcome::Background);
@@ -183,6 +184,22 @@ fn scan(engine: &OcrEngine) -> Result<Outcome> {
         (cw as f32 * (r - l)) as i32,
         (ch as f32 * (b - t)) as i32,
     )?;
+
+    // 心跳扫描：先用几微秒的像素检查看有没有卡片，没有就不跑 OCR
+    if probe {
+        let frame = super::cards::Frame {
+            bgra: &cap.bgra,
+            w: cap.width as usize,
+            h: cap.height as usize,
+            left: cap.left - origin.x,
+            top: cap.top - origin.y,
+            game_w: cw,
+            game_h: ch,
+        };
+        if !super::cards::cards_visible(&frame) {
+            return Ok(Outcome::NoCards);
+        }
+    }
 
     let writer = DataWriter::new()?;
     writer.WriteBytes(&cap.bgra)?;

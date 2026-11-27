@@ -159,6 +159,7 @@ const D = {
   s_overlay_test: ["测试悬浮层", "測試懸浮層", "Test overlay"],
   s_overlay_test_tip: ["在游戏画面上显示 5 秒示例，用来对准卡片下沿", "在遊戲畫面上顯示 5 秒示例，用來對準卡片下緣", "Shows a 5-second sample on the game screen to line up with the cards"],
   dbg_no_game: ["未找到游戏窗口", "找不到遊戲視窗", "Game window not found"],
+  dbg_no_cards: ["画面上没有强化卡片（持续检测中）", "畫面上沒有強化卡片（持續偵測中）", "No augment cards on screen (watching)"],
   dbg_background: ["游戏窗口不在前台", "遊戲視窗不在前景", "Game window not in foreground"],
   dbg_scanned: ["识别到 {lines} 行文字，匹配 {matched} 张卡片", "辨識到 {lines} 行文字，配對 {matched} 張卡片", "Read {lines} lines, matched {matched} cards"],
   dbg_last: ["最近一次识别", "最近一次辨識", "Last scan"],

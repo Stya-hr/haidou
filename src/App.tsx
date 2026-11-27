@@ -433,7 +433,8 @@ function AugmentView(p: { snap: Snapshot; x: Ctx }) {
             {t("dbg_last")}（{ago(p.snap.ocrDebug!.at)}）：
             {p.snap.ocrDebug!.status === "scanned"
               ? t("dbg_scanned", { lines: p.snap.ocrDebug!.lines, matched: p.snap.ocrDebug!.matched })
-              : t(p.snap.ocrDebug!.status === "no_game" ? "dbg_no_game" : "dbg_background")}
+              : t(p.snap.ocrDebug!.status === "no_game" ? "dbg_no_game"
+                : p.snap.ocrDebug!.status === "no_cards" ? "dbg_no_cards" : "dbg_background")}
           </div>
         </Show>
         <div class="list">
@@ -584,8 +585,8 @@ function SettingsView(p: { snap: Snapshot; cat: Catalog | null; notify: (m: stri
         {check("overlayEnabled", "s_overlay")}
         <label>{t("s_overlay_y")}
           <div class="slider">
-            <input type="range" min="0.05" max="0.45" step="0.01" value={s()!.overlayOffsetY}
-              onInput={(e) => patch("overlayOffsetY", Number(e.currentTarget.value), true)} />
+            <input type="range" min="0.45" max="0.92" step="0.005" value={s()!.overlayTop}
+              onInput={(e) => patch("overlayTop", Number(e.currentTarget.value), true)} />
             <button class="small" title={t("s_overlay_test_tip")}
               onClick={async () => { await persist(); api.overlayTest().catch((e) => p.notify(String(e))); }}>{t("s_overlay_test")}</button>
           </div>

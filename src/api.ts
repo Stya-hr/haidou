@@ -23,7 +23,7 @@ export interface Snapshot {
   ocrInstalled: string[];
   offer: OfferCard[];
   ocrError: string | null;
-  ocrDebug: { at: number; status: "no_game" | "background" | "scanned"; lines: number; matched: number; lang: string } | null;
+  ocrDebug: { at: number; status: "no_game" | "background" | "no_cards" | "scanned"; lines: number; matched: number; lang: string } | null;
   sync: { stage: "checking" | "static" | "stats"; done: number; total: number } | null;
 }
 
@@ -65,7 +65,7 @@ export interface Settings {
   autoItems: boolean; autoSpells: boolean;
   ocrEnabled: boolean; overlayEnabled: boolean; ocrLang: string; ocrHotkey: string;
   autoUpdate: boolean;
-  floatEnabled: boolean; overlayOffsetY: number;
+  floatEnabled: boolean; overlayTop: number;
   floatPos: [number, number] | null; floatOffset: [number, number] | null;
 }
 

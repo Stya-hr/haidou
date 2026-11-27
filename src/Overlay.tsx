@@ -60,16 +60,14 @@ export default function Overlay() {
     return list.map((c) => ({ ...c, best: top > 0 && tierRank(c.tier) === top }));
   });
 
-  /** 格宽：按卡片间距算，限制在 150–250px */
+  /** 格宽：按卡片间距算，限制在 150–300px（1080p 下与卡片同宽）*/
   const cellW = () => {
     const xs = cards().map((c) => c.x);
     const gap = xs.length > 1 ? (xs[xs.length - 1] - xs[0]) / (xs.length - 1) : 0.18;
-    return Math.max(150, Math.min(250, gap * vw() * 0.9));
+    return Math.max(150, Math.min(300, gap * vw() * 0.85));
   };
-  const top = () => {
-    const ys = cards().map((c) => c.y);
-    return Math.min(0.92, Math.max(...ys, 0) + (settings()?.overlayOffsetY ?? 0.24));
-  };
+  /** 悬浮条顶部：默认紧贴卡片下沿（真实版式约在游戏高度 66%），可在设置中调整 */
+  const top = () => Math.min(0.92, settings()?.overlayTop ?? 0.66);
   const span = () => {
     const xs = cards().map((c) => c.x * vw());
     return { left: Math.min(...xs) - cellW() / 2 - 10, right: Math.max(...xs) + cellW() / 2 + 10 };

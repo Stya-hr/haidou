@@ -60,6 +60,6 @@ pnpm portable     # 打包 zip 便携版
 
 ## 致谢与声明
 
-数据来自 [AramMeta](https://arammeta.com/?ref=hexpilot) 与 [CommunityDragon](https://www.communitydragon.org/)，基于 [Tauri](https://tauri.app/) 与 [SolidJS](https://www.solidjs.com/)。代码以 [MIT](LICENSE) 开源，第三方数据受各自条款约束。
+卡片检测参考了 [Hexsight](https://github.com/bard58/hexsight)（MIT，见 [THIRD-PARTY-NOTICES](THIRD-PARTY-NOTICES.md)）。数据来自 [AramMeta](https://arammeta.com/?ref=hexpilot) 与 [CommunityDragon](https://www.communitydragon.org/)，基于 [Tauri](https://tauri.app/) 与 [SolidJS](https://www.solidjs.com/)。代码以 [MIT](LICENSE) 开源，第三方数据受各自条款约束。
 
 海克斯领航未获 Riot Games 认可，不代表 Riot Games 或任何官方参与制作、管理 Riot Games 产品人员的观点和意见。Riot Games 及所有相关财产均为 Riot Games, Inc. 的商标或注册商标。本项目与 AramMeta 无隶属关系。

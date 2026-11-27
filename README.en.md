@@ -60,6 +60,6 @@ See the [CHANGELOG](CHANGELOG.md) for release notes.
 
 ## Credits & legal
 
-Data from [AramMeta](https://arammeta.com/?ref=hexpilot) and [CommunityDragon](https://www.communitydragon.org/); built with [Tauri](https://tauri.app/) and [SolidJS](https://www.solidjs.com/). Code under [MIT](LICENSE); third-party data is governed by its own terms.
+Card detection adapted from [Hexsight](https://github.com/bard58/hexsight) (MIT, see [THIRD-PARTY-NOTICES](THIRD-PARTY-NOTICES.md)). Data from [AramMeta](https://arammeta.com/?ref=hexpilot) and [CommunityDragon](https://www.communitydragon.org/); built with [Tauri](https://tauri.app/) and [SolidJS](https://www.solidjs.com/). Code under [MIT](LICENSE); third-party data is governed by its own terms.
 
 HexPilot isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc. This project is not affiliated with AramMeta.
